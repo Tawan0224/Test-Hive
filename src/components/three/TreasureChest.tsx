@@ -1,210 +1,118 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useEffect, useState, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Float, MeshDistortMaterial, Sphere } from '@react-three/drei'
+import { useGLTF, Float, Environment } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Animated tentacle-like appendage
-const Tentacle = ({ position, rotation, color, delay = 0 }: { 
-  position: [number, number, number]
-  rotation: [number, number, number]
-  color: string
-  delay?: number 
-}) => {
-  const ref = useRef<THREE.Mesh>(null)
-  
-  useFrame((state) => {
-    if (ref.current) {
-      const t = state.clock.elapsedTime + delay
-      ref.current.rotation.z = Math.sin(t * 2) * 0.3
-      ref.current.rotation.x = Math.cos(t * 1.5) * 0.2
-    }
-  })
+// Mouse position tracker
+const useMousePosition = () => {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 })
 
-  return (
-    <mesh ref={ref} position={position} rotation={rotation}>
-      <capsuleGeometry args={[0.08, 1.2, 8, 16]} />
-      <meshStandardMaterial 
-        color={color} 
-        roughness={0.3} 
-        metalness={0.6}
-        emissive={color}
-        emissiveIntensity={0.2}
-      />
-    </mesh>
-  )
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      setMouse({
+        x: (event.clientX / window.innerWidth) * 2 - 1,
+        y: -(event.clientY / window.innerHeight) * 2 + 1,
+      })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
+  return mouse
 }
 
-// Main treasure chest body
-const ChestBody = () => {
-  const meshRef = useRef<THREE.Group>(null)
+// 3D Model Component
+const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
+  const groupRef = useRef<THREE.Group>(null)
+  const { scene } = useGLTF('/models/treasure-chest.glb')
+  
+  const targetRotation = useRef({ x: 0, y: 0 })
 
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      targetRotation.current.y = mouse.x * 0.4
+      targetRotation.current.x = mouse.y * 0.2
+
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        targetRotation.current.y,
+        delta * 3
+      )
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(
+        groupRef.current.rotation.x,
+        targetRotation.current.x,
+        delta * 3
+      )
     }
   })
 
   return (
-    <group ref={meshRef}>
-      {/* Chest base */}
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[1.6, 0.9, 1]} />
-        <meshStandardMaterial 
-          color="#8B4513" 
-          roughness={0.7} 
-          metalness={0.3}
-        />
-      </mesh>
-      
-      {/* Chest lid */}
-      <mesh position={[0, 0.6, 0]}>
-        <boxGeometry args={[1.7, 0.4, 1.1]} />
-        <meshStandardMaterial 
-          color="#654321" 
-          roughness={0.6} 
-          metalness={0.4}
-        />
-      </mesh>
-
-      {/* Gold trim */}
-      <mesh position={[0, 0.35, 0.52]}>
-        <boxGeometry args={[1.5, 0.15, 0.08]} />
-        <meshStandardMaterial 
-          color="#FFD700" 
-          roughness={0.2} 
-          metalness={0.9}
-          emissive="#FFD700"
-          emissiveIntensity={0.3}
-        />
-      </mesh>
-
-      {/* Center gem */}
-      <mesh position={[0, 0.6, 0.58]}>
-        <octahedronGeometry args={[0.15]} />
-        <meshStandardMaterial 
-          color="#FF0000" 
-          roughness={0.1} 
-          metalness={0.8}
-          emissive="#FF0000"
-          emissiveIntensity={0.5}
-        />
-      </mesh>
-
-      {/* Gold decorations */}
-      {[-0.6, 0.6].map((x, i) => (
-        <mesh key={i} position={[x, 0.6, 0.55]}>
-          <torusGeometry args={[0.12, 0.03, 8, 16]} />
-          <meshStandardMaterial 
-            color="#FFD700" 
-            roughness={0.2} 
-            metalness={0.9}
-          />
-        </mesh>
-      ))}
+    <group ref={groupRef}>
+      <primitive 
+        object={scene} 
+        scale={0.01}            // Much smaller!
+        position={[0, -0.5, 0]} // Slightly lower
+      />
     </group>
   )
 }
 
-// Magical energy orbs floating around
-const EnergyOrb = ({ position, color }: { position: [number, number, number], color: string }) => {
-  const ref = useRef<THREE.Mesh>(null)
-  
-  useFrame((state) => {
-    if (ref.current) {
-      const t = state.clock.elapsedTime
-      ref.current.position.y = position[1] + Math.sin(t * 3) * 0.2
-      ref.current.position.x = position[0] + Math.cos(t * 2) * 0.15
-    }
-  })
-
+// Loading fallback
+const Loader = () => {
   return (
-    <Sphere ref={ref} args={[0.08, 16, 16]} position={position}>
-      <MeshDistortMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={1}
-        roughness={0}
-        metalness={0.5}
-        distort={0.4}
-        speed={4}
-      />
-    </Sphere>
+    <mesh>
+      <boxGeometry args={[0.5, 0.5, 0.5]} />
+      <meshStandardMaterial color="#9333EA" wireframe />
+    </mesh>
   )
 }
 
-// Complete scene
-const TreasureChestScene = () => {
-  const tentacleColors = ['#FF69B4', '#00CED1', '#9333EA', '#FF1493', '#00FFFF']
-  
-  const tentaclePositions = useMemo(() => [
-    { pos: [0.9, 0.2, 0.3] as [number, number, number], rot: [0, 0, -0.8] as [number, number, number] },
-    { pos: [-0.9, 0.3, 0.2] as [number, number, number], rot: [0, 0, 0.9] as [number, number, number] },
-    { pos: [0.7, 0.1, -0.4] as [number, number, number], rot: [0.3, 0, -0.6] as [number, number, number] },
-    { pos: [-0.6, 0.2, -0.3] as [number, number, number], rot: [-0.2, 0, 0.7] as [number, number, number] },
-    { pos: [0.3, 0.4, 0.5] as [number, number, number], rot: [0.5, 0, -0.3] as [number, number, number] },
-    { pos: [-0.4, 0.3, 0.4] as [number, number, number], rot: [-0.4, 0, 0.4] as [number, number, number] },
-    { pos: [0, 0.5, -0.5] as [number, number, number], rot: [-0.6, 0, 0] as [number, number, number] },
-  ], [])
-
+// Scene with lighting
+const Scene = ({ mouse }: { mouse: { x: number; y: number } }) => {
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.4} />
-      <pointLight position={[5, 5, 5]} intensity={1} color="#ffffff" />
-      <pointLight position={[-5, 3, -5]} intensity={0.5} color="#9333EA" />
-      <pointLight position={[0, -3, 5]} intensity={0.3} color="#FF69B4" />
-      <spotLight
-        position={[0, 5, 0]}
-        angle={0.5}
-        penumbra={1}
-        intensity={0.8}
-        color="#FFD700"
-        castShadow
-      />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[5, 5, 5]} intensity={1.5} />
+      <directionalLight position={[-5, 5, -5]} intensity={0.8} />
+      <pointLight position={[0, 3, 3]} intensity={1} color="#ffffff" />
+      
+      {/* Environment for better reflections */}
+      <Environment preset="sunset" />
 
-      {/* Main floating group */}
+      {/* Floating animation */}
       <Float
-        speed={2}
-        rotationIntensity={0.3}
-        floatIntensity={0.5}
-        floatingRange={[-0.1, 0.1]}
+        speed={1.5}
+        rotationIntensity={0}
+        floatIntensity={0.3}
+        floatingRange={[-0.15, 0.15]}
       >
-        <group position={[0, 0, 0]} scale={1.3}>
-          <ChestBody />
-          
-          {/* Tentacles */}
-          {tentaclePositions.map((t, i) => (
-            <Tentacle
-              key={i}
-              position={t.pos}
-              rotation={t.rot}
-              color={tentacleColors[i % tentacleColors.length]}
-              delay={i * 0.5}
-            />
-          ))}
-        </group>
+        <Suspense fallback={<Loader />}>
+          <TreasureChestModel mouse={mouse} />
+        </Suspense>
       </Float>
-
-      {/* Floating energy orbs */}
-      <EnergyOrb position={[1.5, 1, 0.5]} color="#9333EA" />
-      <EnergyOrb position={[-1.3, 0.8, -0.3]} color="#FF69B4" />
-      <EnergyOrb position={[0.8, -0.5, 0.8]} color="#00CED1" />
     </>
   )
 }
 
-// Exported component with Canvas
+// Main exported component
 const TreasureChest = () => {
+  const mouse = useMousePosition()
+
   return (
-    <div className="absolute top-0 right-0 w-[60%] h-full pointer-events-none">
+    <div className="absolute top-0 right-0 w-[55%] h-full pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 4], fov: 50 }}
         style={{ background: 'transparent' }}
+        gl={{ alpha: true, antialias: true }}
       >
-        <TreasureChestScene />
+        <Scene mouse={mouse} />
       </Canvas>
     </div>
   )
 }
+
+useGLTF.preload('/models/treasure-chest.glb')
 
 export default TreasureChest
