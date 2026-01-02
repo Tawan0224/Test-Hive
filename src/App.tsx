@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import AboutPage from './pages/AboutPage'
 import ProfilePage from './pages/ProfilePage'
+import { LoginPage, SignupPage } from './pages/auth'
 
 function App() {
   return (
@@ -15,7 +16,13 @@ function App() {
       
       {/* Main content */}
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        {/* Auth Routes - Default starts with login */}
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        
+        {/* Protected Routes (after login) */}
+        <Route path="/home" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
