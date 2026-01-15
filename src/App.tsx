@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import AboutPage from './pages/AboutPage'
 import ProfilePage from './pages/ProfilePage'
+import AIGeneratePage from './pages/AIGeneratePage'
 import { LoginPage, SignupPage } from './pages/auth'
 
 function App() {
@@ -25,6 +26,10 @@ function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        
+        {/* AI Quiz Generation */}
+        <Route path="/quiz/create" element={<AIGeneratePage />} />
+        <Route path="/ai-generate" element={<AIGeneratePage />} />
       </Routes>
     </div>
   )

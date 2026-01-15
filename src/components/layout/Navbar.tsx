@@ -5,9 +5,13 @@ const Navbar = () => {
   const navigate = useNavigate()
 
   const handleLogout = () => {
-    // For now, just navigate to login page (no actual auth)
+    // TODO: Implement actual logout logic
+    // Clear any auth tokens, user data, etc.
     navigate('/login')
   }
+
+  // Check if current path matches
+  const isActive = (path: string) => location.pathname === path
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-8 py-6">
@@ -16,22 +20,23 @@ const Navbar = () => {
         <Link 
           to="/home" 
           className="text-2xl font-display font-bold tracking-wider text-white
-                     hover:text-hive-purple-light transition-colors duration-300"
+                     hover:text-hive-purple-light transition-colors duration-300
+                     italic"
         >
           TestHive
         </Link>
 
         {/* Navigation Links */}
-        <div className="flex items-center gap-12">
+        <div className="flex items-center gap-10">
           <Link 
-            to="/about" 
-            className={`nav-link ${location.pathname === '/about' ? 'text-hive-purple-light' : ''}`}
+            to="/home" 
+            className={`nav-link ${isActive('/home') ? 'text-hive-purple-light' : ''}`}
           >
-            About
+            Home
           </Link>
           <Link 
             to="/profile" 
-            className={`nav-link ${location.pathname === '/profile' ? 'text-hive-purple-light' : ''}`}
+            className={`nav-link ${isActive('/profile') ? 'text-hive-purple-light' : ''}`}
           >
             Profile
           </Link>
