@@ -110,3 +110,60 @@
   pointer-events: none;
   z-index: 0;
 }
+
+/* OPTIONAL (safe): small fade-in helper if you ever want it */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 520ms ease-out both;
+}
+
+
+/* =========================
+   Page transition helpers
+   ========================= */
+
+   .page-fade-in {
+    animation: pageFadeIn 420ms ease-out both;
+  }
+  
+  @keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  
+  /* Full-screen fade overlay for route changes */
+  .route-fade-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 260ms ease-in-out;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(147,51,234,0.20), rgba(10,10,18,0.92) 55%, rgba(10,10,18,0.98) 100%),
+      linear-gradient(180deg, rgba(59,130,246,0.06), rgba(147,51,234,0.08));
+  }
+  
+  .route-fade-overlay.is-active {
+    opacity: 1;
+  }
+  
+  /* Optional: subtle “scanline” effect during transition */
+  .route-fade-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.10;
+    mix-blend-mode: screen;
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0.08) 0px,
+      rgba(255,255,255,0.08) 1px,
+      transparent 2px,
+      transparent 6px
+    );
+  }
+  
