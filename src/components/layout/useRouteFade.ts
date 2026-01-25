@@ -11,9 +11,7 @@ export function useRouteFade(durationMs = 260) {
     setActive(false);
   }, []);
 
-  /**
-   * Runs: fade out → callback → (optionally) fade in
-   */
+
   const fadeNavigate = useCallback(
     async (go: () => void) => {
       setActive(true);

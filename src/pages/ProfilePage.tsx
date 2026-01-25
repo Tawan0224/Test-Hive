@@ -205,7 +205,6 @@ const ProfilePage = () => {
                       <button
                         key={test.id}
                         onClick={() => {
-                          // TODO: Navigate to test results
                           console.log('View test:', test.id)
                         }}
                         className="p-4 bg-[#0d1525]/80 hover:bg-[#152035]

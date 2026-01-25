@@ -31,9 +31,7 @@ export default function IntroPage() {
     []
   );
 
-  // ============================
   // STARFIELD CANVAS
-  // ============================
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -143,9 +141,7 @@ export default function IntroPage() {
     };
   }, [COLORS]);
 
-  // ============================
   // PROGRESS LOADER
-  // ============================
   useEffect(() => {
     const total = 5200;
     const start = performance.now();
@@ -182,9 +178,7 @@ export default function IntroPage() {
     return () => cancelAnimationFrame(rafId);
   }, [nav]);
 
-  // ============================
   // RENDER
-  // ============================
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;

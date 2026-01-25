@@ -5,8 +5,6 @@ const Navbar = () => {
   const navigate = useNavigate()
 
   const handleLogout = () => {
-    // TODO: Implement actual logout logic
-    // Clear any auth tokens, user data, etc.
     navigate('/login')
   }
 

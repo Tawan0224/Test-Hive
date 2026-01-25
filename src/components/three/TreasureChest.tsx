@@ -51,8 +51,8 @@ const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
     <group ref={groupRef}>
       <primitive 
         object={scene} 
-        scale={0.01}            // Much smaller!
-        position={[0, -0.5, 0]} // Slightly lower
+        scale={0.01}          
+        position={[0, -0.5, 0]}
       />
     </group>
   )

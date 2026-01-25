@@ -27,7 +27,6 @@ export function RouteFadeProvider({
       setActive(true);
       await new Promise((r) => setTimeout(r, durationMs));
       action();
-      // drop overlay right away; next page can do its own fade-in if you want
       setActive(false);
     },
     [durationMs]
