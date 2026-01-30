@@ -5,6 +5,8 @@ import AboutPage from "./pages/AboutPage";
 import ProfilePage from "./pages/ProfilePage";
 import AIGeneratePage from "./pages/AIGeneratePage";
 import IntroPage from "./pages/IntroPage";
+import MultipleChoiceQuiz from "./pages/MultipleChoiceQuiz";
+import QuizResultsPage from "./pages/QuizResultsPage";
 import { LoginPage, SignupPage } from "./pages/auth";
 
 import { RouteFadeProvider, useRouteFade } from "./components/layout/RouteFadeProvider";
@@ -35,6 +37,13 @@ function AppRoutes() {
       {/* Quiz generation */}
       <Route path="/quiz/create" element={<AIGeneratePage />} />
       <Route path="/ai-generate" element={<AIGeneratePage />} />
+
+      {/* Quiz taking */}
+      <Route path="/quiz/multiple-choice" element={<MultipleChoiceQuiz />} />
+      <Route path="/multiple-choice-quiz" element={<MultipleChoiceQuiz />} />
+      
+      {/* Quiz results */}
+      <Route path="/quiz-results" element={<QuizResultsPage />} />
     </Routes>
   );
 }
@@ -49,9 +58,9 @@ export default function App() {
       <div className="ambient-glow top-[-200px] right-[-200px]" />
       <div className="ambient-glow bottom-[-300px] left-[-200px]" />
 
-      {/* ✅ Provider enables fade transitions everywhere */}
+      {/* Provider enables fade transitions everywhere */}
       <RouteFadeProvider durationMs={260}>
-        {/* ✅ Global overlay sits above everything */}
+        {/* Global overlay sits above everything */}
         <GlobalFadeOverlay />
 
         {/* Routes */}
