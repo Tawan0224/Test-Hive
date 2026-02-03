@@ -6,6 +6,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AIGeneratePage from "./pages/AIGeneratePage";
 import IntroPage from "./pages/IntroPage";
 import MultipleChoiceQuiz from "./pages/MultipleChoiceQuiz";
+import MatchingQuiz from "./pages/MatchingQuiz"; // NEW: Import Matching Quiz
 import QuizResultsPage from "./pages/QuizResultsPage";
 import { LoginPage, SignupPage } from "./pages/auth";
 
@@ -41,6 +42,10 @@ function AppRoutes() {
       {/* Quiz taking */}
       <Route path="/quiz/multiple-choice" element={<MultipleChoiceQuiz />} />
       <Route path="/multiple-choice-quiz" element={<MultipleChoiceQuiz />} />
+      
+      {/* NEW: Matching Quiz Routes */}
+      <Route path="/quiz/matching" element={<MatchingQuiz />} />
+      <Route path="/matching-quiz" element={<MatchingQuiz />} />
       
       {/* Quiz results */}
       <Route path="/quiz-results" element={<QuizResultsPage />} />

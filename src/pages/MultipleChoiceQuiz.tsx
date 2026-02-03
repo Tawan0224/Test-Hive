@@ -281,7 +281,7 @@ const MultipleChoiceQuiz = () => {
                          hover:bg-hive-purple/15 hover:border-hive-purple-light/60 transition-all duration-300
                          uppercase tracking-widest text-xs font-semibold backdrop-blur-sm"
             >
-              Leave THE QUIZ
+              Leave Quiz
             </button>
           </div>
         </nav>
