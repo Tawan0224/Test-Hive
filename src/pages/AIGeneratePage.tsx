@@ -6,7 +6,7 @@ import MascotBird from '../components/three/MascotBird'
 
 // Types
 type QuizType = 'multiple-choice' | 'flashcard' | 'matching'
-type QuestionCount = 10 | 15 | 25
+type QuestionCount = 10 | 15 | 20
 
 interface UploadedFile {
   file: File
@@ -74,7 +74,7 @@ const AIGeneratePage = () => {
     { value: 'matching', label: 'Matching' },
   ]
 
-  const questionCounts: QuestionCount[] = [10, 15, 25]
+  const questionCounts: QuestionCount[] = [10, 15, 20]
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + ' B'
