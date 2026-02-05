@@ -76,149 +76,134 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#0a0a0f]">
       <Navbar />
       
-      {/* Blue ambient glow effects */}
-      <div className="fixed top-[-10%] right-[10%] w-[600px] h-[600px] rounded-full bg-blue-500/10 blur-[150px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-5%] w-[500px] h-[500px] rounded-full bg-cyan-500/8 blur-[130px] pointer-events-none" />
+      {/* Subtle blue ambient glow effects */}
+      <div className="fixed top-[10%] right-[15%] w-[400px] h-[400px] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[10%] left-[10%] w-[350px] h-[350px] rounded-full bg-indigo-600/5 blur-[100px] pointer-events-none" />
       
       <main className="relative z-10 pt-28 px-8 pb-12">
         <div className="max-w-6xl mx-auto">
           {/* Main Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
             
             {/* Left Card - User Profile */}
-            <div className="relative group">
-              {/* Card glow effect - Blue theme */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-blue-500/20 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-              
-              <div className="relative bg-[#0d1525]/80 backdrop-blur-xl rounded-2xl p-8 border border-blue-500/20 min-h-[500px]">
-                {/* Profile Picture */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    {/* Glow behind avatar - Blue theme */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/40 to-cyan-500/40 rounded-full blur-xl" />
-                    
-                    {/* Avatar container with border - Blue theme */}
-                    <div className="relative w-40 h-40 rounded-full p-1 bg-gradient-to-br from-blue-500/50 via-transparent to-cyan-500/50">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-[#0d1525]">
-                        <img
-                          src={user.profilePicture}
-                          alt={user.displayName}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to initials if image fails to load
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                        {/* Fallback initials */}
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold text-white/60">
-                          {user.displayName.split(' ').map(n => n[0]).join('')}
+            <div className="relative">
+              {/* Card with gradient border */}
+              <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-blue-500/30 via-indigo-500/20 to-purple-500/30">
+                <div className="rounded-2xl bg-gradient-to-br from-[#0d1020] via-[#0a0e1a] to-[#0d1020] p-8 min-h-[500px]">
+                  
+                  {/* Profile Picture */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      {/* Subtle glow behind avatar */}
+                      <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl" />
+                      
+                      {/* Avatar container with gradient border */}
+                      <div className="relative w-36 h-36 rounded-full p-[2px] bg-gradient-to-br from-cyan-400/50 via-blue-500/30 to-purple-500/50">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-[#0d1020]">
+                          <img
+                            src={user.profilePicture}
+                            alt={user.displayName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          {/* Fallback initials */}
+                          <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white/60">
+                            {user.displayName.split(' ').map(n => n[0]).join('')}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* User Info */}
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-display font-bold text-white mb-2">
-                    {user.displayName}
-                  </h2>
-                  <p className="text-white/50 text-lg mb-4">
-                    @{user.username}
-                  </p>
-                  <p className="text-white/40 text-sm">
-                    last time is {user.lastActive}
-                  </p>
-                </div>
+                  {/* User Info */}
+                  <div className="text-center mb-8">
+                    <h2 className="text-3xl font-display font-bold text-white mb-2">
+                      {user.displayName}
+                    </h2>
+                    <p className="text-white/40 text-lg mb-4">
+                      @{user.username}
+                    </p>
+                    <p className="text-white/30 text-sm">
+                      last time is {user.lastActive}
+                    </p>
+                  </div>
 
-                {/* Edit Profile Button - Blue theme */}
-                <button
-                  onClick={handleEditProfile}
-                  className="w-full py-4 bg-[#0d1525]/80 hover:bg-[#152035] 
-                           border border-white/10 hover:border-blue-500/30
-                           rounded-xl text-white font-medium
-                           transition-all duration-300
-                           hover:shadow-lg hover:shadow-blue-500/10"
-                >
-                  Edit Profile
-                </button>
+                  {/* Edit Profile Button */}
+                  <button
+                    onClick={handleEditProfile}
+                    className="w-full py-4 bg-[#12182a]/90 hover:bg-[#1a2240]
+                             border border-white/5 hover:border-blue-500/20
+                             rounded-xl text-white/80 font-medium
+                             transition-all duration-300"
+                  >
+                    Edit Profile
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Right Card - Achievements & Test History */}
-            <div className="relative group">
-              {/* Card glow effect - Blue theme */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-              
-              <div className="relative bg-[#0d1525]/80 backdrop-blur-xl rounded-2xl p-8 border border-blue-500/20 min-h-[500px]">
-                {/* Achievements Section */}
-                <div className="mb-10">
-                  <h3 className="text-2xl font-display font-bold text-white mb-6">
-                    Your Achievements
-                  </h3>
+            <div className="relative">
+              {/* Card with gradient border */}
+              <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-blue-500/30 via-indigo-500/20 to-purple-500/30">
+                <div className="rounded-2xl bg-gradient-to-br from-[#0d1020] via-[#0a0e1a] to-[#0d1020] p-8 min-h-[500px]">
                   
-                  <div className="flex gap-6 justify-start">
-                    {achievements.map((achievement) => (
-                      <div
-                        key={achievement.id}
-                        className="relative group/badge cursor-pointer"
-                        title={achievement.description}
-                      >
-                        {/* Achievement badge container */}
-                        <div className="relative">
-                          {/* Glow effect on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/30 to-orange-500/30 rounded-full blur-xl opacity-0 group-hover/badge:opacity-100 transition-opacity duration-300" />
-                          
-                          {/* Badge */}
-                          <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#1a2540] to-[#0d1525] border-2 border-yellow-500/40 flex items-center justify-center
-                                        shadow-lg shadow-yellow-500/10 hover:shadow-yellow-500/20 hover:border-yellow-500/60 hover:scale-110
-                                        transition-all duration-300">
-                            {/* Belt/Badge icon - using championship belt style */}
-                            <div className="text-4xl">
-                              {achievement.id === 1 && '🏆'}
-                              {achievement.id === 2 && '🥇'}
-                              {achievement.id === 3 && '🎖️'}
-                            </div>
+                  {/* Achievements Section */}
+                  <div className="mb-10">
+                    <h3 className="text-2xl font-display font-bold text-white mb-6">
+                      Your Achievements
+                    </h3>
+                    
+                    <div className="flex justify-start gap-8">
+                      {achievements.map((achievement) => (
+                        <div
+                          key={achievement.id}
+                          className="flex flex-col items-center group"
+                        >
+                          {/* Achievement Icon */}
+                          <div className="w-20 h-20 mb-3 flex items-center justify-center
+                                        bg-[#12182a]/80 rounded-2xl border border-white/5
+                                        group-hover:border-blue-500/20 transition-all duration-300">
+                            <span className="text-4xl">{achievement.icon}</span>
                           </div>
+                          
+                          <p className="text-center text-white/60 text-sm max-w-[80px]">
+                            {achievement.name}
+                          </p>
                         </div>
-                        
-                        {/* Achievement name */}
-                        <p className="text-center text-white/70 text-sm mt-3 max-w-[80px]">
-                          {achievement.name}
-                        </p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Test History Section */}
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-white mb-6">
-                    Your Test History
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    {testHistory.map((test) => (
-                      <button
-                        key={test.id}
-                        onClick={() => {
-                          console.log('View test:', test.id)
-                        }}
-                        className="p-4 bg-[#0d1525]/80 hover:bg-[#152035]
-                                 border border-white/10 hover:border-blue-500/30
-                                 rounded-xl text-left
-                                 transition-all duration-300
-                                 hover:shadow-lg hover:shadow-blue-500/10
-                                 hover:scale-[1.02]"
-                      >
-                        <p className="text-white font-medium text-sm leading-tight">
-                              {test.title}
-                        </p>
-                      </button>
-                    ))}
+                  {/* Test History Section */}
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-white mb-6">
+                      Your Test History
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {testHistory.map((test) => (
+                        <button
+                          key={test.id}
+                          onClick={() => {
+                            console.log('View test:', test.id)
+                          }}
+                          className="p-4 bg-[#12182a]/80 hover:bg-[#1a2240]
+                                   border border-white/5 hover:border-blue-500/20
+                                   rounded-xl text-left
+                                   transition-all duration-300"
+                        >
+                          <p className="text-white/80 font-medium text-sm leading-tight">
+                            {test.title}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -29,10 +29,15 @@ const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
   
   const targetRotation = useRef({ x: 0, y: 0 })
 
+  // Base rotation offset - rotated left (negative Y) and tilted down (positive X)
+  const baseRotationY = -0.3  // Rotate left
+  const baseRotationX = 0.15  // Tilt down slightly
+
   useFrame((state, delta) => {
     if (groupRef.current) {
-      targetRotation.current.y = mouse.x * 0.4
-      targetRotation.current.x = mouse.y * 0.2
+      // Add mouse movement to base rotation
+      targetRotation.current.y = baseRotationY + mouse.x * 0.4
+      targetRotation.current.x = baseRotationX + mouse.y * 0.2
 
       groupRef.current.rotation.y = THREE.MathUtils.lerp(
         groupRef.current.rotation.y,
@@ -48,11 +53,11 @@ const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} rotation={[baseRotationX, baseRotationY, 0]}>
       <primitive 
         object={scene} 
         scale={0.01}          
-        position={[0, -0.5, 0]}
+        position={[0, -0.3, 0]}  // Moved down a bit
       />
     </group>
   )

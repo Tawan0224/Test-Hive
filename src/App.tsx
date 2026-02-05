@@ -1,13 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
-import AboutPage from "./pages/AboutPage";
 import ProfilePage from "./pages/ProfilePage";
 import AIGeneratePage from "./pages/AIGeneratePage";
 import IntroPage from "./pages/IntroPage";
 import MultipleChoiceQuiz from "./pages/MultipleChoiceQuiz";
 import MatchingQuiz from "./pages/MatchingQuiz";
-import FlashcardQuiz from "./pages/FlashcardQuiz"; // NEW: Import Flashcard Quiz
+import FlashcardQuiz from "./pages/FlashcardQuiz";
 import QuizResultsPage from "./pages/QuizResultsPage";
 import { LoginPage, SignupPage } from "./pages/auth";
 
@@ -33,7 +32,6 @@ function AppRoutes() {
 
       {/* Main pages */}
       <Route path="/home" element={<HomePage />} />
-      <Route path="/about" element={<AboutPage />} />
       <Route path="/profile" element={<ProfilePage />} />
 
       {/* Quiz generation */}
@@ -48,7 +46,7 @@ function AppRoutes() {
       <Route path="/quiz/matching" element={<MatchingQuiz />} />
       <Route path="/matching-quiz" element={<MatchingQuiz />} />
       
-      {/* NEW: Flashcard Quiz Routes */}
+      {/* Flashcard Quiz Routes */}
       <Route path="/quiz/flashcard" element={<FlashcardQuiz />} />
       <Route path="/flashcard-quiz" element={<FlashcardQuiz />} />
       
