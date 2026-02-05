@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
+import EditProfilePage from "./pages/EditProfilePage";
 import AIGeneratePage from "./pages/AIGeneratePage";
 import IntroPage from "./pages/IntroPage";
 import MultipleChoiceQuiz from "./pages/MultipleChoiceQuiz";
@@ -33,6 +34,7 @@ function AppRoutes() {
       {/* Main pages */}
       <Route path="/home" element={<HomePage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/edit" element={<EditProfilePage />} />
 
       {/* Quiz generation */}
       <Route path="/quiz/create" element={<AIGeneratePage />} />
