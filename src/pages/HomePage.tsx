@@ -167,7 +167,7 @@ const HomePage = () => {
             >
               A Learning <br />
               Platform for <br />
-              <span className="text-hive-purple">Interactive Study</span>
+              Interactive Study
             </h1>
 
             {/* CTA Button */}
