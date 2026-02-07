@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouteFade } from "../components/layout/RouteFadeProvider";
-import Navbar from "../components/layout/Navbar";
 import Button from "../components/ui/Button";
 import TreasureChest from "../components/three/TreasureChest";
 
@@ -8,24 +7,24 @@ import TreasureChest from "../components/three/TreasureChest";
 const teamMembers = [
   {
     name: "Wai Yan Mya Thaung",
-    image: "", // Add your image path here
-    linkedin: "#",
-    email: "mailto:waiyan@example.com",
-    github: "#",
+    image: "", 
+    linkedin: "https://www.linkedin.com/in/wai-yan-mya-thaung-270296238/",
+    email: "u6611932@au.edu",
+    github: "https://github.com/yano49",
   },
   {
     name: "Soe Min Min Latt",
-    image: "", // Add your image path here
-    linkedin: "#",
-    email: "mailto:soeminmin@example.com",
-    github: "#",
+    image: "",
+    linkedin: "https://www.linkedin.com/in/soe-min-min-latt-363234356",
+    email: "u6611938@au.edu",
+    github: "https://github.com/Tawan0224",
   },
   {
     name: "Aung Khant Zaw",
-    image: "", // Add your image path here
-    linkedin: "#",
-    email: "mailto:aungkhant@example.com",
-    github: "#",
+    image: "", 
+    linkedin: "",
+    email: "u6611947@au.edu",
+    github: "https://github.com/Lucas0142",
   },
 ];
 
@@ -52,12 +51,21 @@ const features = [
 const HomePage = () => {
   const { fadeTo } = useRouteFade();
   const aboutRef = useRef<HTMLElement>(null);
+  const joinRef = useRef<HTMLElement>(null); // NEW: ref for join section
   const featuresRef = useRef<HTMLDivElement>(null);
   const teamRef = useRef<HTMLDivElement>(null);
   
   // Navbar visibility state
   const [navbarVisible, setNavbarVisible] = useState(true);
   const lastScrollY = useRef(0);
+
+  // NEW: Smooth scroll function
+  const scrollToSection = (ref: React.RefObject<HTMLElement>) => {
+    ref.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
 
   // Handle navbar hide/show on scroll
   useEffect(() => {
@@ -107,12 +115,12 @@ const HomePage = () => {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* Navbar with hide/show animation */}
+      {/* Navbar with hide/show animation - HOME PAGE VERSION */}
       <div 
-        className={`transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-dark-900/80 
+        border-b border-white/5 transition-transform duration-300 ease-in-out ${
           navbarVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }}
       >
         <nav className="px-8 py-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -133,9 +141,31 @@ const HomePage = () => {
 
             {/* Navigation Links */}
             <div className="flex items-center gap-10">
-              <a href="/home" className="nav-link">Home</a>
-              <a href="/profile" className="nav-link">Profile</a>
-              <a href="/login" className="nav-link hover:text-red-400">Logout</a>
+              {/* About Button - scrolls to about section */}
+              <button
+                onClick={() => scrollToSection(aboutRef)}
+                className="nav-link hover:text-hive-purple-light"
+              >
+                About
+              </button>
+
+              {/* Join Button - scrolls to join section */}
+              <button
+                onClick={() => scrollToSection(joinRef)}
+                className="nav-link hover:text-hive-blue"
+              >
+                Join
+              </button>
+
+              {/* Profile Link */}
+              <a href="/profile" className="nav-link hover:text-hive-purple-light">
+                Profile
+              </a>
+
+              {/* Logout Link */}
+              <a href="/login" className="nav-link hover:text-red-400">
+                Logout
+              </a>
             </div>
           </div>
         </nav>
@@ -207,7 +237,7 @@ const HomePage = () => {
         <TreasureChest />
 
         {/* Scroll Indicator */}
-        <div 
+        <div
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-0"
           style={{
             animation: "fadeSlideUp 0.8s ease-out forwards",
@@ -220,6 +250,59 @@ const HomePage = () => {
           </div>
         </div>
       </main>
+
+      {/* Join Session Section - NEW */}
+      <section ref={joinRef} className="relative z-10 py-24 px-8">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-blue/5 to-transparent pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
+              Join a <span className="text-hive-blue">Live Session</span>
+            </h2>
+            <p className="text-white/60 text-lg font-body">
+              Enter a session PIN to join a live quiz
+            </p>
+          </div>
+
+          {/* Join Card */}
+          <div className="max-w-xl mx-auto">
+            <div className="relative group">
+              {/* Animated border glow */}
+              <div
+                className="absolute -inset-0.5 
+                          bg-hive-blue
+                          rounded-2xl 
+                          opacity-30 
+                          group-hover:opacity-50 
+                          blur-sm 
+                          transition-all 
+                          duration-500"
+              />
+              
+              {/* Card content */}
+              <div className="relative bg-dark-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    placeholder="Enter PIN"
+                    maxLength={6}
+                    className="flex-1 px-6 py-4 bg-dark-700/50 border border-white/10 rounded-xl 
+                             text-white placeholder-white/30 font-mono text-lg tracking-widest text-center
+                             focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20
+                             transition-all duration-300 uppercase"
+                  />
+                  <Button className="px-8 py-4">
+                    Join
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* About Section */}
       <section ref={aboutRef} className="relative z-10 py-24 px-8">
