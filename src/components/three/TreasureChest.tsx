@@ -30,8 +30,8 @@ const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
   const targetRotation = useRef({ x: 0, y: 0 })
 
   // Base rotation offset - rotated left (negative Y) and tilted down (positive X)
-  const baseRotationY = -0.3  // Rotate left
-  const baseRotationX = 0.15  // Tilt down slightly
+  const baseRotationY = -0.3 
+  const baseRotationX = 0.15 
 
   useFrame((state, delta) => {
     if (groupRef.current) {
@@ -57,7 +57,7 @@ const TreasureChestModel = ({ mouse }: { mouse: { x: number; y: number } }) => {
       <primitive 
         object={scene} 
         scale={0.01}          
-        position={[0, -0.3, 0]}  // Moved down a bit
+        position={[0, -0.3, 0]} 
       />
     </group>
   )

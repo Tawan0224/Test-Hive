@@ -51,7 +51,7 @@ const features = [
 const HomePage = () => {
   const { fadeTo } = useRouteFade();
   const aboutRef = useRef<HTMLElement>(null);
-  const joinRef = useRef<HTMLElement>(null); // NEW: ref for join section
+  const joinRef = useRef<HTMLElement>(null); 
   const featuresRef = useRef<HTMLDivElement>(null);
   const teamRef = useRef<HTMLDivElement>(null);
   
@@ -59,7 +59,7 @@ const HomePage = () => {
   const [navbarVisible, setNavbarVisible] = useState(true);
   const lastScrollY = useRef(0);
 
-  // NEW: Smooth scroll function
+  // Smooth scroll function
   const scrollToSection = (ref: React.RefObject<HTMLElement>) => {
     ref.current?.scrollIntoView({ 
       behavior: 'smooth',
@@ -251,7 +251,7 @@ const HomePage = () => {
         </div>
       </main>
 
-      {/* Join Session Section - NEW */}
+      {/* Join Session Section */}
       <section ref={joinRef} className="relative z-10 py-24 px-8">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-blue/5 to-transparent pointer-events-none" />

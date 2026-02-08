@@ -16,7 +16,7 @@ interface FlashcardQuizData {
   deckName: string
 }
 
-// Sample flashcard data (used if no data passed via navigation)
+// Sample flashcard data
 const sampleFlashcardData: FlashcardQuizData = {
   title: "HTTP Status Codes Flashcards",
   deckName: "HTTP Status Codes",

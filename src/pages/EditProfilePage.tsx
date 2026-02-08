@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 
-// Sample user data (will be replaced with actual auth data later)
+// Sample user data 
 const initialUserData = {
   displayName: 'John Cena',
   username: 'johncena114',

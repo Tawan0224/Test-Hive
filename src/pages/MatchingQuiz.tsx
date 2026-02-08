@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle, XCircle } from 'lucide-react'
 
-// Import 3D Mascot Components - Reusing from Multiple Choice Quiz
+// Import 3D Mascot Components
 import QuizBirdMascot from '../components/three/QuizBirdMascot'
 import QuizOctopusMascot from '../components/three/QuizOctopusMascot'
 
@@ -72,7 +72,7 @@ const MatchingQuiz = () => {
   const [shuffledRight, setShuffledRight] = useState<MatchingPair[]>([])
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null)
   const [selectedRight, setSelectedRight] = useState<string | null>(null)
-  const [matches, setMatches] = useState<Map<string, string>>(new Map()) // leftId -> rightId
+  const [matches, setMatches] = useState<Map<string, string>>(new Map())
   const [correctMatches, setCorrectMatches] = useState<Set<string>>(new Set())
   const [incorrectAttempts, setIncorrectAttempts] = useState<Set<string>>(new Set())
   const [timeRemaining, setTimeRemaining] = useState(quizData.timeLimit)

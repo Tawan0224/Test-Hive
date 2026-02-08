@@ -250,12 +250,12 @@ const MultipleChoiceQuiz = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-purple/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Left 3D Mascot - Bird - MOVED HIGHER with bottom-20 */}
+      {/* Left 3D Mascot - Bird */}
       <div className="absolute -left-10 bottom-32 w-[500px] h-[550px] z-10 pointer-events-none">
         <QuizBirdMascot />
       </div>
 
-      {/* Right 3D Mascot - Octopus - MOVED LOWER with -bottom-16 */}
+      {/* Right 3D Mascot - Octopus */}
       <div className="absolute right-0 -bottom-24 w-[700px] h-[800px] z-10 pointer-events-none">
         <QuizOctopusMascot />
       </div>

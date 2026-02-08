@@ -45,7 +45,7 @@ const CameraFit = () => {
     // Adjust camera distance based on model size
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180)
     let cameraZ = maxDim / (2 * Math.tan(fov / 2))
-    cameraZ *= 0.01 // Add some padding
+    cameraZ *= 0.01 
     
     camera.position.z = Math.max(cameraZ, 3)
     camera.updateProjectionMatrix()

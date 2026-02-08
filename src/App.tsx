@@ -24,7 +24,7 @@ function GlobalFadeOverlay() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Intro first */}
+      {/* Intro */}
       <Route path="/" element={<IntroPage />} />
 
       {/* Auth */}
@@ -38,19 +38,11 @@ function AppRoutes() {
 
       {/* Quiz generation */}
       <Route path="/quiz/create" element={<AIGeneratePage />} />
-      <Route path="/ai-generate" element={<AIGeneratePage />} />
 
       {/* Quiz taking */}
       <Route path="/quiz/multiple-choice" element={<MultipleChoiceQuiz />} />
-      <Route path="/multiple-choice-quiz" element={<MultipleChoiceQuiz />} />
-      
-      {/* Matching Quiz Routes */}
       <Route path="/quiz/matching" element={<MatchingQuiz />} />
-      <Route path="/matching-quiz" element={<MatchingQuiz />} />
-      
-      {/* Flashcard Quiz Routes */}
       <Route path="/quiz/flashcard" element={<FlashcardQuiz />} />
-      <Route path="/flashcard-quiz" element={<FlashcardQuiz />} />
       
       {/* Quiz results */}
       <Route path="/quiz-results" element={<QuizResultsPage />} />

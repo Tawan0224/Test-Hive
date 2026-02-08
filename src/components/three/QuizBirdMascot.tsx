@@ -13,7 +13,7 @@ const BirdModel = () => {
 
   useFrame((state) => {
     if (groupRef.current) {
-      // Gentle idle rotation (small movement, keeping it facing right)
+      // Gentle idle rotation
       groupRef.current.rotation.y = Math.PI + Math.sin(state.clock.elapsedTime * 0.5) * 0.1
       // Breathing effect
       const breathe = Math.sin(state.clock.elapsedTime * 1.5) * 0.02
@@ -41,8 +41,6 @@ const CameraFit = () => {
     
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180)
     let cameraZ = maxDim / (2 * Math.tan(fov / 2))
-    
-    // MUCH CLOSER = MUCH BIGGER
     cameraZ *= 0.0005
     
     camera.position.z = Math.max(cameraZ, 0.5)
@@ -86,12 +84,12 @@ const Scene = () => {
       {/* Environment for reflections */}
       <Environment preset="sunset" />
 
-      {/* Floating animation - MUCH SMOOTHER */}
+      {/* Floating animation */}
       <Float
-        speed={1.2}                    // Slower speed (was 2)
-        rotationIntensity={0.05}       // Very subtle rotation (was 0.1)
-        floatIntensity={0.15}          // Gentle float (was 0.5)
-        floatingRange={[-0.03, 0.03]}  // Small range (was [-0.1, 0.1])
+        speed={1.2}                    
+        rotationIntensity={0.05}    
+        floatIntensity={0.15}    
+        floatingRange={[-0.03, 0.03]}  
       >
         <Suspense fallback={<Loader />}>
           <BirdModel />
