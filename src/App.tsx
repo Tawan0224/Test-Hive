@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
@@ -52,22 +53,24 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <div className="relative min-h-screen">
-      {/* Background noise texture */}
-      <div className="bg-noise" />
+    <AuthProvider>
+      <div className="relative min-h-screen">
+        {/* Background noise texture */}
+        <div className="bg-noise" />
 
-      {/* Ambient glow effects */}
-      <div className="ambient-glow top-[-200px] right-[-200px]" />
-      <div className="ambient-glow bottom-[-300px] left-[-200px]" />
+        {/* Ambient glow effects */}
+        <div className="ambient-glow top-[-200px] right-[-200px]" />
+        <div className="ambient-glow bottom-[-300px] left-[-200px]" />
 
-      {/* Provider enables fade transitions everywhere */}
-      <RouteFadeProvider durationMs={260}>
-        {/* Global overlay sits above everything */}
-        <GlobalFadeOverlay />
+        {/* Provider enables fade transitions everywhere */}
+        <RouteFadeProvider durationMs={260}>
+          {/* Global overlay sits above everything */}
+          <GlobalFadeOverlay />
 
-        {/* Routes */}
-        <AppRoutes />
-      </RouteFadeProvider>
-    </div>
+          {/* Routes */}
+          <AppRoutes />
+        </RouteFadeProvider>
+      </div>
+    </AuthProvider>
   );
 }
