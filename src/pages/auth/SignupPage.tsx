@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 
 const SignupPage = () => {
   const navigate = useNavigate()
+  const { signup } = useAuth()
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
   // Generate static star positions on mount
@@ -24,10 +28,41 @@ const SignupPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+
+    // Client-side validation
+    if (!username.trim()) {
+      setError('Username is required')
+      return
+    }
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least 1 uppercase letter')
+      return
+    }
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least 1 number')
+      return
+    }
+
     setIsLoading(true)
-    // Simulate loading for better UX feedback
-    await new Promise(resolve => setTimeout(resolve, 800))
-    navigate('/home')
+
+    const result = await signup(email, password, username)
+
+    if (result.success) {
+      navigate('/home')
+    } else {
+      setError(result.error || 'Signup failed')
+    }
+
+    setIsLoading(false)
   }
 
   return (
@@ -113,6 +148,13 @@ const SignupPage = () => {
             <div className="h-1 w-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-8" />
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="relative mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6 relative">
             {/* Email Field */}
@@ -139,6 +181,30 @@ const SignupPage = () => {
               </div>
             </div>
 
+            {/* Username Field */}
+            <div className="space-y-2">
+              <label className="text-white/80 text-sm font-medium flex items-center gap-2">
+                <span className={`transition-colors duration-300 ${focusedField === 'username' ? 'text-blue-400' : ''}`}>
+                  Username
+                </span>
+              </label>
+              <div className={`relative group transition-all duration-300 ${focusedField === 'username' ? 'scale-[1.02]' : ''}`}>
+                <div className={`absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-0 transition-opacity duration-300 ${focusedField === 'username' ? 'opacity-50' : 'group-hover:opacity-30'}`} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onFocus={() => setFocusedField('username')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Choose a username"
+                  className="relative w-full px-4 py-3.5 bg-[#1a1a2e]/80 border-2 border-purple-500/50 rounded-lg
+                           text-white placeholder-white/30 outline-none
+                           focus:border-purple-500 focus:bg-[#1a1a2e]
+                           transition-all duration-300"
+                />
+              </div>
+            </div>
+
             {/* Password Field */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -147,12 +213,6 @@ const SignupPage = () => {
                     Password
                   </span>
                 </label>
-                <button
-                  type="button"
-                  className="text-white/50 text-sm hover:text-blue-400 transition-colors duration-300"
-                >
-                  
-                </button>
               </div>
               <div className={`relative group transition-all duration-300 ${focusedField === 'password' ? 'scale-[1.02]' : ''}`}>
                 <div className={`absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-0 transition-opacity duration-300 ${focusedField === 'password' ? 'opacity-50' : 'group-hover:opacity-30'}`} />
@@ -176,6 +236,7 @@ const SignupPage = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              <p className="text-white/30 text-xs">Min 8 characters, 1 uppercase, 1 number</p>
             </div>
 
             {/* Submit Button */}

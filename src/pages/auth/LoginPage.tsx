@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
   // Generate static star positions on mount
@@ -24,10 +27,18 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setIsLoading(true)
-    // Simulate loading for better UX feedback
-    await new Promise(resolve => setTimeout(resolve, 800))
-    navigate('/home')
+
+    const result = await login(email, password)
+
+    if (result.success) {
+      navigate('/home')
+    } else {
+      setError(result.error || 'Login failed')
+    }
+
+    setIsLoading(false)
   }
 
   return (
@@ -112,6 +123,13 @@ const LoginPage = () => {
             </h1>
             <div className="h-1 w-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-8" />
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="relative mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6 relative">
