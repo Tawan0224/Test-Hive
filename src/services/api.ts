@@ -55,6 +55,12 @@ export const authAPI = {
 
   getMe: () => request('/auth/me'),
 
+  updateProfile: (data: { displayName: string; username: string; email: string }) =>
+    request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   googleAuth: (data: { email: string; googleId: string; displayName: string; profilePicture: string }) =>
     request('/auth/google', {
       method: 'POST',
