@@ -76,13 +76,27 @@ const MatchingQuiz = () => {
     isCorrect: boolean; id: string
   }>>([])
 
-  // ─── BATTLE SYSTEM ─────────────────────────────────────────────
-  const [battle, battleActions] = useBattleSystem()
+  // Track total match attempts (both correct and incorrect) for progress display
+  const [totalAttempts, setTotalAttempts] = useState(0)
+
+  // ─── BATTLE SYSTEM (pass total pairs for dynamic HP scaling) ────
+  const [battle, battleActions] = useBattleSystem(quizData.pairs.length)
 
   useEffect(() => {
     setShuffledLeft(shuffleArray(quizData.pairs))
     setShuffledRight(shuffleArray(quizData.pairs))
   }, [quizData.pairs])
+
+  // ─── AUTO-END WHEN BIRD HP REACHES 0 ──────────────────────────
+  useEffect(() => {
+    if (battle.birdDefeated && !isComplete) {
+      const timeout = setTimeout(() => {
+        setIsComplete(true)
+        handleComplete()
+      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
+      return () => clearTimeout(timeout)
+    }
+  }, [battle.birdDefeated, isComplete])
 
   useEffect(() => {
     if (isComplete || timeRemaining <= 0) return
@@ -129,14 +143,14 @@ const MatchingQuiz = () => {
   }, [updateConnectionLines])
 
   const handleLeftClick = (pair: MatchingPair) => {
-    if (isComplete || correctMatches.has(pair.id)) return
+    if (isComplete || correctMatches.has(pair.id) || battle.birdDefeated) return
     if (selectedLeft === pair.id) { setSelectedLeft(null); return }
     setSelectedLeft(pair.id)
     if (selectedRight) tryMatch(pair.id, selectedRight)
   }
 
   const handleRightClick = (pair: MatchingPair) => {
-    if (isComplete) return
+    if (isComplete || battle.birdDefeated) return
     const isAlreadyMatched = Array.from(matches.entries()).some(
       ([leftId, rightId]) => rightId === pair.id && correctMatches.has(leftId)
     )
@@ -155,6 +169,7 @@ const MatchingQuiz = () => {
     const newMatches = new Map(matches)
     newMatches.set(leftId, rightId)
     setMatches(newMatches)
+    setTotalAttempts(prev => prev + 1)
 
     if (leftPair.id === rightPair.id) {
       // ✅ Correct - Bird attacks Octopus!
@@ -292,6 +307,17 @@ const MatchingQuiz = () => {
           </div>
         </div>
 
+        {/* Bird Defeated Overlay */}
+        {battle.birdDefeated && (
+          <div className="flex-shrink-0 flex justify-center px-8 py-2">
+            <div className="bg-red-500/20 border border-red-500/40 rounded-xl px-6 py-3 backdrop-blur-sm">
+              <p className="text-red-400 font-display font-bold text-center">
+                Bird has been defeated! Submitting results...
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Matching Area */}
         <div className="flex-1 px-8 py-4 overflow-y-auto">
           <div ref={containerRef} className="max-w-4xl mx-auto relative min-h-full">
@@ -359,8 +385,8 @@ const MatchingQuiz = () => {
                       onClick={() => handleRightClick(pair)}
                       className={`relative p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 font-body text-center text-sm
                         ${isUsed ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-60'
-                          : isSelected ? 'bg-hive-pink/30 border-hive-pink text-white scale-105 shadow-lg shadow-hive-pink/30'
-                          : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-pink/50'}`}>
+                          : isSelected ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30'
+                          : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50'}`}>
                       {isUsed && <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1"><CheckCircle size={14} className="text-white" /></div>}
                       <span>{pair.right}</span>
                     </div>
@@ -371,28 +397,49 @@ const MatchingQuiz = () => {
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex-shrink-0 px-8 py-4">
-          <div className="max-w-4xl mx-auto flex justify-center">
+        {/* Bottom Bar */}
+        <div className="flex-shrink-0 px-8 py-4 border-t border-white/5 bg-dark-900/50 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <p className="text-white/40 text-sm font-body">
+              {isComplete 
+                ? `Completed! ${correctMatches.size}/${quizData.pairs.length} pairs matched correctly`
+                : battle.birdDefeated
+                  ? 'Bird defeated! Submitting results...'
+                  : `Select a term, then select its matching definition`
+              }
+            </p>
             <button onClick={handleSubmit}
-              className="px-12 py-4 bg-gradient-to-r from-hive-purple to-hive-pink text-white rounded-xl hover:from-hive-purple-light hover:to-hive-pink transition-all duration-300 font-semibold text-lg shadow-lg shadow-hive-purple/30 font-body disabled:opacity-50 disabled:cursor-not-allowed">
-              {isComplete ? 'View Results' : `Submit (${correctMatches.size}/${quizData.pairs.length} matched)`}
+              disabled={battle.birdDefeated}
+              className="px-8 py-3 bg-gradient-to-r from-hive-purple to-hive-pink text-white rounded-xl 
+                         font-semibold hover:shadow-lg hover:shadow-hive-purple/30 transition-all duration-300
+                         disabled:opacity-50 disabled:cursor-not-allowed font-body">
+              Submit
             </button>
           </div>
         </div>
       </div>
 
-      {/* Leave Confirmation Modal */}
+      {/* Leave Quiz Modal */}
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-dark-600 border border-hive-purple/30 rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4 font-display">Leave Quiz?</h3>
-            <p className="text-white/70 mb-6 font-body">Your progress will be lost. Are you sure you want to leave?</p>
-            <div className="flex gap-4 justify-end">
-              <button onClick={() => setShowLeaveConfirm(false)}
-                className="px-6 py-2.5 bg-dark-500 text-white/80 rounded-lg hover:bg-dark-500/80 transition-all duration-300 font-body">Cancel</button>
-              <button onClick={confirmLeaveQuiz}
-                className="px-6 py-2.5 bg-red-500/80 text-white rounded-lg hover:bg-red-500 transition-all duration-300 font-body">Leave</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative bg-gradient-to-br from-dark-600 to-dark-800 border border-hive-purple/30 
+                          rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-hive-purple/20">
+            <div className="absolute inset-0 bg-hive-purple/5 rounded-2xl blur-xl" />
+            <div className="relative">
+              <h3 className="text-2xl font-bold text-white mb-4 font-display">Leave Quiz?</h3>
+              <p className="text-white/70 mb-8 leading-relaxed font-body">
+                Are you sure you want to leave? Your progress will not be saved.
+              </p>
+              <div className="flex gap-4 justify-end">
+                <button onClick={() => setShowLeaveConfirm(false)}
+                  className="px-6 py-2.5 bg-dark-500 text-white/80 rounded-lg hover:bg-dark-500/80 transition-all duration-300 font-body">
+                  Cancel
+                </button>
+                <button onClick={confirmLeaveQuiz}
+                  className="px-6 py-2.5 bg-red-500/80 text-white rounded-lg hover:bg-red-500 transition-all duration-300 font-body">
+                  Leave
+                </button>
+              </div>
             </div>
           </div>
         </div>
