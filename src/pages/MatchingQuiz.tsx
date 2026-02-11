@@ -212,21 +212,23 @@ const MatchingQuiz = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
       </div>
 
+      {/* ─── LEFT HP BAR ─── */}
+      <div className="absolute top-[280px] left-20 z-30 pointer-events-none">
+        <BattleHPBar current={battle.birdHP} max={BATTLE_CONFIG.BIRD_MAX_HP}
+          name="Bird" side="left" isHit={battle.isBirdHit}/>
+      </div>
       {/* ─── LEFT MASCOT: BIRD (Player) ─── */}
-      <div className="absolute -left-10 bottom-2 w-[860px] h-[920px] z-10 pointer-events-none overflow-visible">
-        <div className="absolute top-4 left-20 z-30">
-          <BattleHPBar current={battle.birdHP} max={BATTLE_CONFIG.BIRD_MAX_HP}
-            name="Bird" side="left" isHit={battle.isBirdHit} icon="🐦" />
-        </div>
+      <div className="absolute -left-32 bottom-2 w-[860px] h-[920px] z-10 pointer-events-none overflow-visible">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
+      {/* ─── RIGHT HP BAR ─── */}
+      <div className="absolute top-[280px] right-20 z-30 pointer-events-none">
+        <BattleHPBar current={battle.octopusHP} max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
+          name="Octopus" side="right" isHit={battle.isOctopusHit}/>
+      </div>
       {/* ─── RIGHT MASCOT: OCTOPUS (Enemy) ─── */}
-      <div className="absolute -right-12 -bottom-20 w-[940px] h-[1040px] z-10 pointer-events-none overflow-visible">
-        <div className="absolute top-8 right-28 z-30">
-          <BattleHPBar current={battle.octopusHP} max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
-            name="Octopus" side="right" isHit={battle.isOctopusHit} icon="🐙" />
-        </div>
+      <div className="absolute -right-36 -bottom-20 w-[780px] h-[880px] z-10 pointer-events-none overflow-visible">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
 
