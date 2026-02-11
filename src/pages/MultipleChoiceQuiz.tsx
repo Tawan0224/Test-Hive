@@ -117,18 +117,7 @@ const sampleQuizData: QuizData = {
       points: 10
     },
     {
-      questionText: "Which HTTP status code means 'Method Not Allowed'?",
-      options: [
-        { text: "400", isCorrect: false },
-        { text: "401", isCorrect: false },
-        { text: "403", isCorrect: false },
-        { text: "405", isCorrect: true }
-      ],
-      timeLimit: 30,
-      points: 10
-    },
-    {
-      questionText: "Which HTTP status code means 'No Content'?",
+      questionText: "Which HTTP status code indicates 'No Content'?",
       options: [
         { text: "200", isCorrect: false },
         { text: "201", isCorrect: false },
@@ -168,21 +157,39 @@ const MultipleChoiceQuiz = () => {
   const [isQuizComplete, setIsQuizComplete] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   
-  // ─── BATTLE SYSTEM ───────────────────────────────────────────
-  const [battle, battleActions] = useBattleSystem()
-  const [isAnswerLocked, setIsAnswerLocked] = useState(false) // prevent clicking during animation
+  // Track how many questions have been answered
+  const [answeredCount, setAnsweredCount] = useState(0)
+  
+  // ─── BATTLE SYSTEM (pass totalQuestions for dynamic HP scaling) ───
+  const [battle, battleActions] = useBattleSystem(totalQuestions)
+  const [isAnswerLocked, setIsAnswerLocked] = useState(false)
   const [lastAnswerResult, setLastAnswerResult] = useState<'correct' | 'wrong' | null>(null)
   const [lastAnswerIndex, setLastAnswerIndex] = useState<number | null>(null)
 
   const currentQuestion = quizData.questions[currentQuestionIndex]
 
+  // ─── AUTO-END QUIZ WHEN BIRD HP REACHES 0 ─────────────────────
+  useEffect(() => {
+    if (battle.birdDefeated && !isQuizComplete) {
+      // Bird (player) is defeated — auto-submit after a short delay for the animation to play
+      const timeout = setTimeout(() => {
+        handleSubmitQuiz()
+      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
+      return () => clearTimeout(timeout)
+    }
+  }, [battle.birdDefeated, isQuizComplete])
+
   // Timer
   useEffect(() => {
-    if (isQuizComplete) return
+    if (isQuizComplete || battle.birdDefeated) return
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
+          // Time ran out — count as wrong answer
+          battleActions.triggerWrongAnswer()
+          setAnsweredCount(prev => prev + 1)
+          
           if (currentQuestionIndex < totalQuestions - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1)
             return quizData.questions[currentQuestionIndex + 1]?.timeLimit || 30
@@ -196,7 +203,7 @@ const MultipleChoiceQuiz = () => {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [currentQuestionIndex, isQuizComplete, totalQuestions, quizData.questions])
+  }, [currentQuestionIndex, isQuizComplete, totalQuestions, quizData.questions, battle.birdDefeated])
 
   useEffect(() => {
     setTimeRemaining(currentQuestion?.timeLimit || 30)
@@ -204,7 +211,7 @@ const MultipleChoiceQuiz = () => {
 
   // ─── ANSWER HANDLER (with battle trigger) ──────────────────
   const handleAnswerSelect = (optionIndex: number) => {
-    if (isAnswerLocked) return // Block during animation
+    if (isAnswerLocked || battle.birdDefeated) return
     
     const newAnswers = [...selectedAnswers]
     newAnswers[currentQuestionIndex] = optionIndex
@@ -216,6 +223,7 @@ const MultipleChoiceQuiz = () => {
     setIsAnswerLocked(true)
     setLastAnswerResult(isCorrect ? 'correct' : 'wrong')
     setLastAnswerIndex(optionIndex)
+    setAnsweredCount(prev => prev + 1)
 
     // Trigger battle animation
     if (isCorrect) {
@@ -224,7 +232,7 @@ const MultipleChoiceQuiz = () => {
       battleActions.triggerWrongAnswer()
     }
 
-    // Auto-advance after animation
+    // Auto-advance after animation (unless bird is defeated — that's handled by the useEffect above)
     setTimeout(() => {
       setLastAnswerResult(null)
       setLastAnswerIndex(null)
@@ -256,6 +264,9 @@ const MultipleChoiceQuiz = () => {
   }
 
   const handleSubmitQuiz = useCallback(() => {
+    if (isQuizComplete) return
+    setIsQuizComplete(true)
+    
     let correctCount = 0
     quizData.questions.forEach((question, index) => {
       if (selectedAnswers[index] !== null && question.options[selectedAnswers[index]!]?.isCorrect) {
@@ -272,7 +283,7 @@ const MultipleChoiceQuiz = () => {
     }
 
     navigate('/quiz-results', { state: { results } })
-  }, [selectedAnswers, quizData, totalQuestions, navigate])
+  }, [selectedAnswers, quizData, totalQuestions, navigate, isQuizComplete])
 
   const handleLeaveQuiz = () => {
     setShowLeaveConfirm(true)
@@ -292,7 +303,6 @@ const MultipleChoiceQuiz = () => {
     const wasJustSelected = lastAnswerIndex === index
 
     if (isShowingResult && isCorrectOption) {
-      // Always highlight the correct answer in green
       return {
         background: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%)',
         border: '2px solid rgba(34, 197, 94, 0.7)',
@@ -300,7 +310,6 @@ const MultipleChoiceQuiz = () => {
       }
     }
     if (isShowingResult && wasJustSelected && !isCorrectOption) {
-      // Wrong answer in red
       return {
         background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%)',
         border: '2px solid rgba(239, 68, 68, 0.7)',
@@ -427,15 +436,26 @@ const MultipleChoiceQuiz = () => {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white/80 text-sm font-medium tracking-wide font-body">Question Completed</p>
+              <p className="text-white/80 text-sm font-medium tracking-wide font-body">Question</p>
               <p className="text-white text-3xl font-bold mt-1 font-display">
-                <span className="text-hive-purple-light">{currentQuestionIndex + 1}</span>
+                <span className="text-hive-purple-light">{answeredCount}</span>
                 <span className="text-white/40">/</span>
                 <span>{totalQuestions}</span>
               </p>
             </div>
           </div>
         </div>
+
+        {/* Bird Defeated Overlay */}
+        {battle.birdDefeated && (
+          <div className="flex-shrink-0 flex justify-center px-8 py-2">
+            <div className="bg-red-500/20 border border-red-500/40 rounded-xl px-6 py-3 backdrop-blur-sm">
+              <p className="text-red-400 font-display font-bold text-center">
+                Bird has been defeated! Submitting results...
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Question Card */}
         <div className="flex-shrink-0 flex justify-center px-8 py-4">
@@ -457,9 +477,9 @@ const MultipleChoiceQuiz = () => {
         <div className="flex-shrink-0 flex items-center justify-center gap-6 py-4">
           <button
             onClick={handlePrevious}
-            disabled={currentQuestionIndex === 0 || isAnswerLocked}
+            disabled={currentQuestionIndex === 0 || isAnswerLocked || battle.birdDefeated}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all duration-300 font-body
-                       ${currentQuestionIndex === 0 || isAnswerLocked
+                       ${currentQuestionIndex === 0 || isAnswerLocked || battle.birdDefeated
                          ? 'bg-dark-600/30 text-white/30 cursor-not-allowed' 
                          : 'bg-dark-600/50 text-white/90 hover:bg-dark-500/50 border border-white/10'}`}
           >
@@ -469,7 +489,7 @@ const MultipleChoiceQuiz = () => {
           
           <button
             onClick={handleNext}
-            disabled={isAnswerLocked}
+            disabled={isAnswerLocked || battle.birdDefeated}
             className="flex items-center gap-2 px-5 py-2.5 bg-dark-600/50 text-white/90 rounded-lg 
                        hover:bg-dark-500/50 transition-all duration-300 border border-white/10 font-body
                        disabled:opacity-50 disabled:cursor-not-allowed"
@@ -491,7 +511,7 @@ const MultipleChoiceQuiz = () => {
                 <button
                   key={index}
                   onClick={() => handleAnswerSelect(index)}
-                  disabled={isAnswerLocked}
+                  disabled={isAnswerLocked || battle.birdDefeated}
                   className={`relative py-5 px-6 rounded-xl text-2xl font-bold transition-all duration-300 
                              transform hover:scale-[1.03] overflow-hidden group font-body
                              text-white/90 hover:shadow-lg hover:shadow-hive-purple/10

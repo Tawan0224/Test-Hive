@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
-import { BATTLE_CONFIG, type MascotState } from './battleConfig'
+import { useState, useCallback, useRef, useMemo } from 'react'
+import { BATTLE_CONFIG, getDynamicDamage, type MascotState } from './battleConfig'
 import type { BattleAction } from './BattleEffects'
 
 interface BattleState {
@@ -12,6 +12,8 @@ interface BattleState {
   screenShake: boolean
   isBirdHit: boolean
   isOctopusHit: boolean
+  birdDefeated: boolean
+  octopusDefeated: boolean
 }
 
 interface BattleActions {
@@ -20,7 +22,12 @@ interface BattleActions {
   resetBattle: () => void
 }
 
-const useBattleSystem = (): [BattleState, BattleActions] => {
+/**
+ * @param totalQuestions - The total number of questions in the quiz.
+ *   Used to scale damage so HP bars accurately reflect progress.
+ *   If not provided, falls back to default config values.
+ */
+const useBattleSystem = (totalQuestions?: number): [BattleState, BattleActions] => {
   const [birdHP, setBirdHP] = useState(BATTLE_CONFIG.BIRD_MAX_HP)
   const [octopusHP, setOctopusHP] = useState(BATTLE_CONFIG.OCTOPUS_MAX_HP)
   const [birdState, setBirdState] = useState<MascotState>('idle')
@@ -32,12 +39,24 @@ const useBattleSystem = (): [BattleState, BattleActions] => {
   const [isOctopusHit, setIsOctopusHit] = useState(false)
   const actionIdRef = useRef(0)
 
+  // Calculate dynamic damage based on question count
+  const dynamicDamage = useMemo(() => {
+    if (totalQuestions && totalQuestions > 0) {
+      return getDynamicDamage(totalQuestions)
+    }
+    return {
+      birdAttackDamage: BATTLE_CONFIG.BIRD_ATTACK_DAMAGE,
+      octopusAttackDamage: BATTLE_CONFIG.OCTOPUS_ATTACK_DAMAGE,
+      comboBonusDamage: BATTLE_CONFIG.COMBO_BONUS_DAMAGE,
+    }
+  }, [totalQuestions])
+
   const triggerCorrectAnswer = useCallback(() => {
     const newCombo = comboCount + 1
     setComboCount(newCombo)
     
-    const damage = BATTLE_CONFIG.BIRD_ATTACK_DAMAGE + 
-      (newCombo >= 3 ? BATTLE_CONFIG.COMBO_BONUS_DAMAGE : 0)
+    const damage = dynamicDamage.birdAttackDamage + 
+      (newCombo >= 3 ? dynamicDamage.comboBonusDamage : 0)
 
     // Bird attacks
     setBirdState('attack')
@@ -66,12 +85,12 @@ const useBattleSystem = (): [BattleState, BattleActions] => {
       setScreenShake(false)
       setIsOctopusHit(false)
     }, BATTLE_CONFIG.ATTACK_ANIMATION_DURATION)
-  }, [comboCount])
+  }, [comboCount, dynamicDamage])
 
   const triggerWrongAnswer = useCallback(() => {
     setComboCount(0)
     
-    const damage = BATTLE_CONFIG.OCTOPUS_ATTACK_DAMAGE
+    const damage = dynamicDamage.octopusAttackDamage
 
     // Octopus attacks
     setOctopusState('attack')
@@ -100,7 +119,7 @@ const useBattleSystem = (): [BattleState, BattleActions] => {
       setScreenShake(false)
       setIsBirdHit(false)
     }, BATTLE_CONFIG.ATTACK_ANIMATION_DURATION)
-  }, [])
+  }, [dynamicDamage])
 
   const resetBattle = useCallback(() => {
     setBirdHP(BATTLE_CONFIG.BIRD_MAX_HP)
@@ -124,6 +143,8 @@ const useBattleSystem = (): [BattleState, BattleActions] => {
     screenShake,
     isBirdHit,
     isOctopusHit,
+    birdDefeated: birdHP <= 0,
+    octopusDefeated: octopusHP <= 0,
   }
 
   const actions: BattleActions = {
