@@ -1,25 +1,23 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
-
-// Sample user data 
-const initialUserData = {
-  displayName: 'John Cena',
-  username: 'johncena114',
-  email: 'johncena@example.com',
-  profilePicture: 'https://i.pravatar.cc/300?img=12',
-  bio: 'Learning enthusiast | Quiz lover',
-}
+import { useAuth } from '../contexts/AuthContext'
+import { authAPI } from '../services/api'
 
 const EditProfilePage = () => {
   const navigate = useNavigate()
+  const { user, isLoading: authLoading, isAuthenticated, updateUser } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Form state
-  const [formData, setFormData] = useState(initialUserData)
+  const [formData, setFormData] = useState({
+    displayName: '',
+    username: '',
+    email: '',
+    profilePicture: '',
+  })
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Password change state
@@ -35,11 +33,29 @@ const EditProfilePage = () => {
     confirm: false,
   })
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login')
+    }
+  }, [authLoading, isAuthenticated, navigate])
+
+  // Populate form data from authenticated user
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        displayName: user.displayName || '',
+        username: user.username || '',
+        email: user.email || '',
+        profilePicture: user.profilePicture || '',
+      })
+    }
+  }, [user])
+
   // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -96,10 +112,6 @@ const EditProfilePage = () => {
       newErrors.email = 'Please enter a valid email'
     }
 
-    if (formData.bio && formData.bio.length > 160) {
-      newErrors.bio = 'Bio must be 160 characters or less'
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -130,22 +142,42 @@ const EditProfilePage = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  // Handle form submission
+  // Handle form submission - calls real API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!validateForm()) return
 
     setIsLoading(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    setErrors({})
+
+    const response = await authAPI.updateProfile({
+      displayName: formData.displayName.trim(),
+      username: formData.username.trim(),
+      email: formData.email.trim(),
+    })
+
     setIsLoading(false)
-    setSuccessMessage('Profile updated successfully!')
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => setSuccessMessage(''), 3000)
+
+    if (response.success && response.data) {
+      // Update user in AuthContext so profile page shows new data immediately
+      updateUser((response.data as any).user)
+      // Navigate back to profile page
+      navigate('/profile')
+    } else {
+      // Show error from server
+      const errorMessage = response.error?.message || 'Failed to update profile'
+      const errorCode = response.error?.code
+
+      // Map specific errors to form fields
+      if (errorCode === 'USERNAME_EXISTS') {
+        setErrors({ username: errorMessage })
+      } else if (errorCode === 'EMAIL_EXISTS') {
+        setErrors({ email: errorMessage })
+      } else {
+        setErrors({ general: errorMessage })
+      }
+    }
   }
 
   // Handle password change submission
@@ -156,21 +188,39 @@ const EditProfilePage = () => {
 
     setIsLoading(true)
     
-    // Simulate API call
+    // TODO: Implement API call to change password
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     setIsLoading(false)
-    setSuccessMessage('Password changed successfully!')
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     setShowPasswordSection(false)
-    
-    setTimeout(() => setSuccessMessage(''), 3000)
   }
 
   // Handle cancel
   const handleCancel = () => {
     navigate('/profile')
   }
+
+  // Generate initials for default avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  // Show loading state
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="text-[#7d8590] text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  const avatarSrc = previewImage || formData.profilePicture
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -185,14 +235,14 @@ const EditProfilePage = () => {
             </h1>
           </div>
 
-          {/* Success Message */}
-          {successMessage && (
-            <div className="mb-6 p-4 bg-[#238636]/20 border border-[#238636] rounded-md">
-              <div className="flex items-center gap-2 text-[#3fb950]">
+          {/* General Error Message */}
+          {errors.general && (
+            <div className="mb-6 p-4 bg-[#f85149]/10 border border-[#f85149]/30 rounded-md">
+              <div className="flex items-center gap-2 text-[#f85149]">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-sm font-medium">{successMessage}</span>
+                <span className="text-sm font-medium">{errors.general}</span>
               </div>
             </div>
           )}
@@ -218,14 +268,11 @@ const EditProfilePage = () => {
                              ${errors.displayName 
                                ? 'border-[#f85149] focus:border-[#f85149]' 
                                : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                    placeholder="Enter your name"
+                    placeholder="Your display name"
                   />
                   {errors.displayName && (
                     <p className="mt-1 text-xs text-[#f85149]">{errors.displayName}</p>
                   )}
-                  <p className="mt-1 text-xs text-[#7d8590]">
-                    Your name may appear around TestHive where you contribute or are mentioned.
-                  </p>
                 </div>
 
                 {/* Username */}
@@ -244,7 +291,7 @@ const EditProfilePage = () => {
                              ${errors.username 
                                ? 'border-[#f85149] focus:border-[#f85149]' 
                                : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                    placeholder="Enter your username"
+                    placeholder="Your username"
                   />
                   {errors.username && (
                     <p className="mt-1 text-xs text-[#f85149]">{errors.username}</p>
@@ -273,38 +320,6 @@ const EditProfilePage = () => {
                     <p className="mt-1 text-xs text-[#f85149]">{errors.email}</p>
                   )}
                 </div>
-
-                {/* Bio */}
-                <div>
-                  <label htmlFor="bio" className="block text-sm font-medium text-white mb-2">
-                    Bio
-                  </label>
-                  <textarea
-                    id="bio"
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    rows={3}
-                    className={`w-full px-3 py-1.5 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
-                             placeholder-[#484f58] outline-none transition-colors duration-200 resize-none
-                             ${errors.bio 
-                               ? 'border-[#f85149] focus:border-[#f85149]' 
-                               : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                    placeholder="Tell us a little bit about yourself"
-                  />
-                  <div className="flex justify-between mt-1">
-                    {errors.bio ? (
-                      <p className="text-xs text-[#f85149]">{errors.bio}</p>
-                    ) : (
-                      <p className="text-xs text-[#7d8590]">
-                        You can @mention other users to link to them.
-                      </p>
-                    )}
-                    <span className={`text-xs ${formData.bio.length > 160 ? 'text-[#f85149]' : 'text-[#7d8590]'}`}>
-                      {formData.bio.length}/160
-                    </span>
-                  </div>
-                </div>
               </div>
 
               {/* Right: Profile Picture */}
@@ -318,11 +333,22 @@ const EditProfilePage = () => {
                     className="w-48 h-48 rounded-full overflow-hidden border-2 border-[#30363d] 
                              cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   >
-                    <img
-                      src={previewImage || formData.profilePicture}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                    {avatarSrc ? (
+                      <img
+                        src={avatarSrc}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] flex items-center justify-center">
+                        <span className="text-4xl font-bold text-white">
+                          {getInitials(formData.displayName || formData.username || 'U')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -351,6 +377,121 @@ const EditProfilePage = () => {
             {/* Divider */}
             <div className="my-8 border-t border-[#21262d]" />
 
+            {/* Password Change Section */}
+            {!showPasswordSection ? (
+              <div className="mb-8">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordSection(true)}
+                  className="text-sm text-[#58a6ff] hover:underline"
+                >
+                  Change password
+                </button>
+              </div>
+            ) : (
+              <div className="mb-8 p-4 border border-[#30363d] rounded-md">
+                <h3 className="text-sm font-medium text-white mb-4">Change password</h3>
+                
+                {/* Current Password */}
+                <div className="mb-4">
+                  <label className="block text-xs text-[#7d8590] mb-1">Old password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full px-3 py-1.5 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
+                               outline-none transition-colors duration-200
+                               ${errors.currentPassword ? 'border-[#f85149]' : 'border-[#30363d] focus:border-[#58a6ff]'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-white text-xs"
+                    >
+                      {showPasswords.current ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.currentPassword && <p className="mt-1 text-xs text-[#f85149]">{errors.currentPassword}</p>}
+                </div>
+
+                {/* New Password */}
+                <div className="mb-4">
+                  <label className="block text-xs text-[#7d8590] mb-1">New password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.new ? 'text' : 'password'}
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full px-3 py-1.5 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
+                               outline-none transition-colors duration-200
+                               ${errors.newPassword ? 'border-[#f85149]' : 'border-[#30363d] focus:border-[#58a6ff]'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-white text-xs"
+                    >
+                      {showPasswords.new ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.newPassword && <p className="mt-1 text-xs text-[#f85149]">{errors.newPassword}</p>}
+                </div>
+
+                {/* Confirm Password */}
+                <div className="mb-4">
+                  <label className="block text-xs text-[#7d8590] mb-1">Confirm new password</label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className={`w-full px-3 py-1.5 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
+                               outline-none transition-colors duration-200
+                               ${errors.confirmPassword ? 'border-[#f85149]' : 'border-[#30363d] focus:border-[#58a6ff]'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-white text-xs"
+                    >
+                      {showPasswords.confirm ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="mt-1 text-xs text-[#f85149]">{errors.confirmPassword}</p>}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePasswordSubmit}
+                    disabled={isLoading}
+                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
+                             rounded-md text-sm font-medium text-white
+                             transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Updating...' : 'Update password'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordSection(false)
+                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                      setErrors({})
+                    }}
+                    className="px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
+                             rounded-md text-sm font-medium text-[#c9d1d9]
+                             transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
               <button
@@ -373,187 +514,6 @@ const EditProfilePage = () => {
               </button>
             </div>
           </form>
-
-          {/* Password Section */}
-          <div className="mt-12 pt-8 border-t border-[#21262d]">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-white">
-                  Change password
-                </h2>
-                <p className="text-sm text-[#7d8590] mt-1">
-                  Update your password associated with your account.
-                </p>
-              </div>
-              {!showPasswordSection && (
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordSection(true)}
-                  className="px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
-                           rounded-md text-sm font-medium text-[#c9d1d9]
-                           transition-colors duration-200"
-                >
-                  Change password
-                </button>
-              )}
-            </div>
-
-            {showPasswordSection && (
-              <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
-                {/* Current Password */}
-                <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-white mb-2">
-                    Current password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.current ? 'text' : 'password'}
-                      id="currentPassword"
-                      name="currentPassword"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordChange}
-                      className={`w-full px-3 py-1.5 pr-10 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
-                               placeholder-[#484f58] outline-none transition-colors duration-200
-                               ${errors.currentPassword 
-                                 ? 'border-[#f85149] focus:border-[#f85149]' 
-                                 : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                      placeholder="Enter current password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-[#c9d1d9]"
-                    >
-                      {showPasswords.current ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.currentPassword && (
-                    <p className="mt-1 text-xs text-[#f85149]">{errors.currentPassword}</p>
-                  )}
-                </div>
-
-                {/* New Password */}
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-white mb-2">
-                    New password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.new ? 'text' : 'password'}
-                      id="newPassword"
-                      name="newPassword"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange}
-                      className={`w-full px-3 py-1.5 pr-10 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
-                               placeholder-[#484f58] outline-none transition-colors duration-200
-                               ${errors.newPassword 
-                                 ? 'border-[#f85149] focus:border-[#f85149]' 
-                                 : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                      placeholder="Enter new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-[#c9d1d9]"
-                    >
-                      {showPasswords.new ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.newPassword && (
-                    <p className="mt-1 text-xs text-[#f85149]">{errors.newPassword}</p>
-                  )}
-                  <p className="mt-1 text-xs text-[#7d8590]">
-                    Must be at least 8 characters with 1 uppercase letter and 1 number.
-                  </p>
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-2">
-                    Confirm new password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.confirm ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      className={`w-full px-3 py-1.5 pr-10 bg-[#0d1117] border rounded-md text-[#c9d1d9] text-sm
-                               placeholder-[#484f58] outline-none transition-colors duration-200
-                               ${errors.confirmPassword 
-                                 ? 'border-[#f85149] focus:border-[#f85149]' 
-                                 : 'border-[#30363d] focus:border-[#58a6ff]'}`}
-                      placeholder="Confirm new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-[#c9d1d9]"
-                    >
-                      {showPasswords.confirm ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-xs text-[#f85149]">{errors.confirmPassword}</p>
-                  )}
-                </div>
-
-                {/* Password Action Buttons */}
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
-                             rounded-md text-sm font-medium text-white
-                             transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Updating...' : 'Update password'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordSection(false)
-                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-                      setErrors({})
-                    }}
-                    className="px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
-                             rounded-md text-sm font-medium text-[#c9d1d9]
-                             transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
 
           {/* Danger Zone */}
           <div className="mt-12 pt-8 border-t border-[#21262d]">

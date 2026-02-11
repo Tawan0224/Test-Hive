@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Achievement from '../models/Achievement.js';
 import { generateToken } from '../utils/generateToken.js';
 
 // @desc    Register new user (email/password)
@@ -8,7 +9,6 @@ export const signup = async (req, res) => {
   try {
     const { email, password, username } = req.body;
 
-    // Check if email already exists
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(400).json({
@@ -20,7 +20,6 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Check if username already exists
     const existingUsername = await User.findOne({ username });
     if (existingUsername) {
       return res.status(400).json({
@@ -32,7 +31,6 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Create user
     const user = await User.create({
       email,
       password,
@@ -41,7 +39,6 @@ export const signup = async (req, res) => {
       authProvider: 'email',
     });
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -70,7 +67,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user and include password field
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
@@ -82,7 +78,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if user signed up with OAuth
     if (user.authProvider !== 'email') {
       return res.status(401).json({
         success: false,
@@ -93,7 +88,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Compare password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -105,11 +99,9 @@ export const login = async (req, res) => {
       });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.json({
@@ -136,10 +128,25 @@ export const login = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('achievements.achievementId');
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        },
+      });
+    }
+
+    if (user.achievements && user.achievements.length > 0) {
+      await user.populate('achievements.achievementId');
+    }
+
     res.json({
       success: true,
-      data: { user },
+      data: { user: user.toJSON() },
     });
   } catch (error) {
     console.error('GetMe error:', error);
@@ -153,6 +160,118 @@ export const getMe = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  try {
+    const { displayName, username, email } = req.body;
+    const userId = req.user._id;
+
+    // Validate required fields
+    if (!displayName || !displayName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Display name is required',
+        },
+      });
+    }
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Username is required',
+        },
+      });
+    }
+
+    if (username.length < 3) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Username must be at least 3 characters',
+        },
+      });
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Username can only contain letters, numbers, and underscores',
+        },
+      });
+    }
+
+    // Check if username is taken by another user
+    const existingUsername = await User.findOne({ username, _id: { $ne: userId } });
+    if (existingUsername) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'USERNAME_EXISTS',
+          message: 'This username is already taken',
+        },
+      });
+    }
+
+    // Check if email is taken by another user
+    if (email) {
+      const existingEmail = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'EMAIL_EXISTS',
+            message: 'This email is already in use',
+          },
+        });
+      }
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        displayName: displayName.trim(),
+        username: username.trim(),
+        ...(email && { email: email.trim().toLowerCase() }),
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { user: updatedUser.toJSON() },
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_FAILED',
+        message: 'Failed to update profile',
+      },
+    });
+  }
+};
+
 // @desc    Handle Google OAuth callback
 // @route   POST /api/auth/google
 // @access  Public
@@ -160,11 +279,9 @@ export const googleAuth = async (req, res) => {
   try {
     const { email, googleId, displayName, profilePicture } = req.body;
 
-    // Check if user exists with this Google ID
     let user = await User.findOne({ authProviderId: googleId, authProvider: 'google' });
 
     if (!user) {
-      // Check if email is already used with email/password
       const existingEmail = await User.findOne({ email, authProvider: 'email' });
       if (existingEmail) {
         return res.status(400).json({
@@ -176,7 +293,6 @@ export const googleAuth = async (req, res) => {
         });
       }
 
-      // Generate unique username from display name
       const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
       let username = baseUsername;
       let counter = 1;
@@ -185,7 +301,6 @@ export const googleAuth = async (req, res) => {
         counter++;
       }
 
-      // Create new user
       user = await User.create({
         email,
         username,
@@ -195,7 +310,6 @@ export const googleAuth = async (req, res) => {
         authProviderId: googleId,
       });
     } else {
-      // Update last login
       user.lastLogin = new Date();
       await user.save();
     }
