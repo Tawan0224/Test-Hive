@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-// Import 3D Mascot Components
+// Import 3D Mascot Components (updated with battleState prop)
 import QuizBirdMascot from '../components/three/QuizBirdMascot'
 import QuizOctopusMascot from '../components/three/QuizOctopusMascot'
+
+// Import Battle System
+import { BattleHPBar, BattleEffects, useBattleSystem, BATTLE_CONFIG } from '../components/battle'
 
 // Types
 interface QuizOption {
@@ -114,12 +117,12 @@ const sampleQuizData: QuizData = {
       points: 10
     },
     {
-      questionText: "Which HTTP status code indicates 'Created'?",
+      questionText: "Which HTTP status code means 'Method Not Allowed'?",
       options: [
-        { text: "200", isCorrect: false },
-        { text: "201", isCorrect: true },
-        { text: "202", isCorrect: false },
-        { text: "204", isCorrect: false }
+        { text: "400", isCorrect: false },
+        { text: "401", isCorrect: false },
+        { text: "403", isCorrect: false },
+        { text: "405", isCorrect: true }
       ],
       timeLimit: 30,
       points: 10
@@ -164,9 +167,16 @@ const MultipleChoiceQuiz = () => {
   const [totalTimeLimit] = useState(quizData.questions[0]?.timeLimit || 30)
   const [isQuizComplete, setIsQuizComplete] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  
+  // ─── BATTLE SYSTEM ───────────────────────────────────────────
+  const [battle, battleActions] = useBattleSystem()
+  const [isAnswerLocked, setIsAnswerLocked] = useState(false) // prevent clicking during animation
+  const [lastAnswerResult, setLastAnswerResult] = useState<'correct' | 'wrong' | null>(null)
+  const [lastAnswerIndex, setLastAnswerIndex] = useState<number | null>(null)
 
   const currentQuestion = quizData.questions[currentQuestionIndex]
 
+  // Timer
   useEffect(() => {
     if (isQuizComplete) return
 
@@ -192,19 +202,52 @@ const MultipleChoiceQuiz = () => {
     setTimeRemaining(currentQuestion?.timeLimit || 30)
   }, [currentQuestionIndex, currentQuestion?.timeLimit])
 
+  // ─── ANSWER HANDLER (with battle trigger) ──────────────────
   const handleAnswerSelect = (optionIndex: number) => {
+    if (isAnswerLocked) return // Block during animation
+    
     const newAnswers = [...selectedAnswers]
     newAnswers[currentQuestionIndex] = optionIndex
     setSelectedAnswers(newAnswers)
+
+    const isCorrect = currentQuestion.options[optionIndex].isCorrect
+    
+    // Lock answers and show result
+    setIsAnswerLocked(true)
+    setLastAnswerResult(isCorrect ? 'correct' : 'wrong')
+    setLastAnswerIndex(optionIndex)
+
+    // Trigger battle animation
+    if (isCorrect) {
+      battleActions.triggerCorrectAnswer()
+    } else {
+      battleActions.triggerWrongAnswer()
+    }
+
+    // Auto-advance after animation
+    setTimeout(() => {
+      setLastAnswerResult(null)
+      setLastAnswerIndex(null)
+      setIsAnswerLocked(false)
+
+      if (currentQuestionIndex < totalQuestions - 1) {
+        setCurrentQuestionIndex(prev => prev + 1)
+      } else {
+        handleSubmitQuiz()
+      }
+    }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
   }
 
   const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
+    if (currentQuestionIndex > 0 && !isAnswerLocked) {
       setCurrentQuestionIndex(currentQuestionIndex - 1)
+      setLastAnswerResult(null)
+      setLastAnswerIndex(null)
     }
   }
 
   const handleNext = () => {
+    if (isAnswerLocked) return
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
@@ -241,8 +284,46 @@ const MultipleChoiceQuiz = () => {
 
   const timerPercentage = (timeRemaining / totalTimeLimit) * 100
 
+  // Determine option styling
+  const getOptionStyle = (index: number) => {
+    const isSelected = selectedAnswers[currentQuestionIndex] === index
+    const isShowingResult = lastAnswerResult !== null
+    const isCorrectOption = currentQuestion.options[index].isCorrect
+    const wasJustSelected = lastAnswerIndex === index
+
+    if (isShowingResult && isCorrectOption) {
+      // Always highlight the correct answer in green
+      return {
+        background: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%)',
+        border: '2px solid rgba(34, 197, 94, 0.7)',
+        className: 'shadow-lg shadow-green-500/30 scale-[1.03]'
+      }
+    }
+    if (isShowingResult && wasJustSelected && !isCorrectOption) {
+      // Wrong answer in red
+      return {
+        background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%)',
+        border: '2px solid rgba(239, 68, 68, 0.7)',
+        className: 'shadow-lg shadow-red-500/30 animate-battle-wrong-shake'
+      }
+    }
+    if (isSelected && !isShowingResult) {
+      return {
+        background: 'linear-gradient(135deg, #9333EA 0%, #7C3AED 50%, #6D28D9 100%)',
+        border: '2px solid rgba(168, 85, 247, 0.6)',
+        className: 'shadow-lg shadow-hive-purple/25'
+      }
+    }
+    return {
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)',
+      border: '2px solid rgba(59, 130, 246, 0.25)',
+      className: ''
+    }
+  }
+
   return (
-    <div className="h-screen w-screen relative overflow-hidden">
+    <div className={`h-screen w-screen relative overflow-hidden
+                     ${battle.screenShake ? 'animate-battle-screen-shake' : ''}`}>
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
@@ -250,14 +331,44 @@ const MultipleChoiceQuiz = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-purple/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Left 3D Mascot - Bird */}
+      {/* ─── LEFT MASCOT: BIRD (Player) ─────────────────────────── */}
       <div className="absolute -left-10 bottom-32 w-[500px] h-[550px] z-10 pointer-events-none">
-        <QuizBirdMascot />
+        {/* HP Bar positioned above the bird */}
+        <div className="absolute top-4 left-20 z-30">
+          <BattleHPBar
+            current={battle.birdHP}
+            max={BATTLE_CONFIG.BIRD_MAX_HP}
+            name="Bird"
+            side="left"
+            isHit={battle.isBirdHit}
+            icon="🐦"
+          />
+        </div>
+        <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
-      {/* Right 3D Mascot - Octopus */}
+      {/* ─── RIGHT MASCOT: OCTOPUS (Enemy) ──────────────────────── */}
       <div className="absolute right-0 -bottom-24 w-[700px] h-[800px] z-10 pointer-events-none">
-        <QuizOctopusMascot />
+        {/* HP Bar positioned above the octopus */}
+        <div className="absolute top-8 right-28 z-30">
+          <BattleHPBar
+            current={battle.octopusHP}
+            max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
+            name="Octopus"
+            side="right"
+            isHit={battle.isOctopusHit}
+            icon="🐙"
+          />
+        </div>
+        <QuizOctopusMascot battleState={battle.octopusState} />
+      </div>
+
+      {/* ─── BATTLE EFFECTS LAYER ───────────────────────────────── */}
+      <div className="absolute inset-0 z-25 pointer-events-none">
+        <BattleEffects
+          lastAction={battle.lastAction}
+          comboCount={battle.comboCount}
+        />
       </div>
 
       {/* Main Content */}
@@ -278,23 +389,28 @@ const MultipleChoiceQuiz = () => {
             <button
               onClick={handleLeaveQuiz}
               className="px-6 py-2.5 border border-hive-purple/40 text-white/90 rounded-lg 
-                         hover:bg-hive-purple/15 hover:border-hive-purple-light/60 transition-all duration-300
-                         uppercase tracking-widest text-xs font-semibold backdrop-blur-sm"
+                         hover:bg-hive-purple/10 hover:border-hive-purple transition-all duration-300 
+                         text-sm font-medium font-body"
             >
               Leave Quiz
             </button>
           </div>
         </nav>
 
-        {/* Timer and Progress */}
+        {/* Timer & Progress */}
         <div className="flex-shrink-0 px-8 py-2">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="flex-1 mr-8">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-white/70 text-sm font-medium tracking-wide font-body">Time Remaining</span>
-                <span className="text-white font-bold text-lg font-display">{timeRemaining}s</span>
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-8">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/60 text-sm font-body">Time Remaining</span>
+                <span className={`text-lg font-bold font-display ${
+                  timerPercentage <= 25 ? 'text-red-400' : 
+                  timerPercentage <= 50 ? 'text-yellow-400' : 'text-hive-blue'
+                }`}>
+                  {timeRemaining}s
+                </span>
               </div>
-              <div className="h-3 bg-dark-600/50 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
+              <div className="h-3 bg-dark-600/50 rounded-full overflow-hidden border border-white/5">
                 <div 
                   className="h-full rounded-full transition-all duration-1000 ease-linear relative"
                   style={{ 
@@ -334,16 +450,16 @@ const MultipleChoiceQuiz = () => {
           </div>
         </div>
 
-        {/* Spacer - pushes content to fill middle */}
+        {/* Spacer */}
         <div className="flex-1" />
 
         {/* Navigation Buttons */}
         <div className="flex-shrink-0 flex items-center justify-center gap-6 py-4">
           <button
             onClick={handlePrevious}
-            disabled={currentQuestionIndex === 0}
+            disabled={currentQuestionIndex === 0 || isAnswerLocked}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all duration-300 font-body
-                       ${currentQuestionIndex === 0 
+                       ${currentQuestionIndex === 0 || isAnswerLocked
                          ? 'bg-dark-600/30 text-white/30 cursor-not-allowed' 
                          : 'bg-dark-600/50 text-white/90 hover:bg-dark-500/50 border border-white/10'}`}
           >
@@ -353,8 +469,10 @@ const MultipleChoiceQuiz = () => {
           
           <button
             onClick={handleNext}
+            disabled={isAnswerLocked}
             className="flex items-center gap-2 px-5 py-2.5 bg-dark-600/50 text-white/90 rounded-lg 
-                       hover:bg-dark-500/50 transition-all duration-300 border border-white/10 font-body"
+                       hover:bg-dark-500/50 transition-all duration-300 border border-white/10 font-body
+                       disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="text-sm font-medium">
               {currentQuestionIndex === totalQuestions - 1 ? 'Finish' : 'Next'}
@@ -366,32 +484,39 @@ const MultipleChoiceQuiz = () => {
         {/* Answer Options */}
         <div className="flex-shrink-0 flex justify-center px-8 pb-8">
           <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
-            {currentQuestion.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswerSelect(index)}
-                className={`relative py-5 px-6 rounded-xl text-2xl font-bold transition-all duration-300 
-                           transform hover:scale-[1.03] overflow-hidden group font-body
-                           ${selectedAnswers[currentQuestionIndex] === index
-                             ? 'text-white shadow-lg shadow-hive-purple/25'
-                             : 'text-white/90 hover:shadow-lg hover:shadow-hive-purple/10'
-                           }`}
-                style={{
-                  background: selectedAnswers[currentQuestionIndex] === index
-                    ? 'linear-gradient(135deg, #9333EA 0%, #7C3AED 50%, #6D28D9 100%)'
-                    : 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)',
-                  border: selectedAnswers[currentQuestionIndex] === index
-                    ? '2px solid rgba(168, 85, 247, 0.6)'
-                    : '2px solid rgba(59, 130, 246, 0.25)'
-                }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r from-hive-purple/0 via-hive-purple/10 to-hive-purple/0 
-                                opacity-0 group-hover:opacity-100 transition-opacity duration-300
-                                ${selectedAnswers[currentQuestionIndex] === index ? 'opacity-100' : ''}`} />
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                <span className="relative z-10">{option.text}</span>
-              </button>
-            ))}
+            {currentQuestion.options.map((option, index) => {
+              const style = getOptionStyle(index)
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleAnswerSelect(index)}
+                  disabled={isAnswerLocked}
+                  className={`relative py-5 px-6 rounded-xl text-2xl font-bold transition-all duration-300 
+                             transform hover:scale-[1.03] overflow-hidden group font-body
+                             text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
+                             disabled:hover:scale-100
+                             ${style.className}`}
+                  style={{
+                    background: style.background,
+                    border: style.border,
+                  }}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r from-hive-purple/0 via-hive-purple/10 to-hive-purple/0 
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <span className="relative z-10">{option.text}</span>
+                  
+                  {/* Correct/Wrong indicators */}
+                  {lastAnswerResult && currentQuestion.options[index].isCorrect && (
+                    <span className="absolute top-2 right-2 text-sm">✅</span>
+                  )}
+                  {lastAnswerResult && lastAnswerIndex === index && !currentQuestion.options[index].isCorrect && (
+                    <span className="absolute top-2 right-2 text-sm">❌</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -407,22 +532,20 @@ const MultipleChoiceQuiz = () => {
               <p className="text-white/70 mb-8 leading-relaxed font-body">
                 Are you sure you want to leave? Your progress will not be saved.
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-4 justify-end">
                 <button
                   onClick={() => setShowLeaveConfirm(false)}
-                  className="flex-1 py-3 px-6 bg-dark-500/50 text-white rounded-xl 
-                             hover:bg-dark-500 transition-all duration-300 font-medium font-body
-                             border border-white/10"
+                  className="px-6 py-2.5 bg-dark-500 text-white/80 rounded-lg hover:bg-dark-500/80
+                             transition-all duration-300 font-body"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmLeaveQuiz}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl 
-                             hover:from-red-500 hover:to-red-600 transition-all duration-300 font-medium font-body
-                             shadow-lg shadow-red-900/30"
+                  className="px-6 py-2.5 bg-red-500/80 text-white rounded-lg hover:bg-red-500
+                             transition-all duration-300 font-body"
                 >
-                  Leave Quiz
+                  Leave
                 </button>
               </div>
             </div>
