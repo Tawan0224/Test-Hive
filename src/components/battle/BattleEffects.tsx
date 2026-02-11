@@ -174,7 +174,20 @@ const BattleEffects = ({ lastAction, comboCount }: BattleEffectsProps) => {
   }>>([])
   const [flash, setFlash] = useState<'correct' | 'wrong' | null>(null)
   const [showCombo, setShowCombo] = useState(false)
+  const [viewport, setViewport] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1400,
+    height: typeof window !== 'undefined' ? window.innerHeight : 900,
+  })
   const processedRef = useRef<number>(0)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (!lastAction || lastAction.id === processedRef.current) return
@@ -182,58 +195,56 @@ const BattleEffects = ({ lastAction, comboCount }: BattleEffectsProps) => {
 
     const isCorrect = lastAction.type === 'correct'
     
-    // Bird attacks right (octopus) on correct, Octopus attacks left (bird) on wrong
-    const fromX = isCorrect ? 80 : 720
-    const toX = isCorrect ? 720 : 80
-    const centerY = 180
+    // Keep trajectories aligned with mascot positions in the lower battlefield
+    const sourceX = isCorrect ? viewport.width * 0.18 : viewport.width * 0.78
+    const targetX = isCorrect ? viewport.width * 0.78 : viewport.width * 0.2
+    const sourceY = viewport.height * 0.57
+    const targetY = viewport.height * 0.56
 
     // Screen flash
     setFlash(isCorrect ? 'correct' : 'wrong')
     setTimeout(() => setFlash(null), 600)
 
-    // Spawn particles (3 per attack)
+    // Spawn particles
     const newParticles = Array.from({ length: 4 }, (_, i) => ({
       id: Date.now() + i,
-      fromX: fromX + (Math.random() - 0.5) * 30,
-      fromY: centerY + (Math.random() - 0.5) * 40,
-      toX: toX + (Math.random() - 0.5) * 40,
-      toY: centerY + (Math.random() - 0.5) * 50,
+      fromX: sourceX + (Math.random() - 0.5) * 44,
+      fromY: sourceY + (Math.random() - 0.5) * 32,
+      toX: targetX + (Math.random() - 0.5) * 60,
+      toY: targetY + (Math.random() - 0.5) * 36,
       color: isCorrect ? '#a855f7' : '#ef4444',
       delay: i * 50,
     }))
     setParticles(prev => [...prev, ...newParticles])
 
-    // Impact burst at target (delayed to match particle arrival)
+    // Impact burst + damage number
     setTimeout(() => {
       setImpacts(prev => [...prev, {
         id: Date.now(),
-        x: toX,
-        y: centerY,
+        x: targetX,
+        y: targetY,
         color: isCorrect ? '#a855f7' : '#ef4444',
       }])
 
-      // Damage number
       setDamageNumbers(prev => [...prev, {
         id: Date.now() + 1,
-        x: toX + (Math.random() - 0.5) * 30,
-        y: centerY - 30,
+        x: targetX + (Math.random() - 0.5) * 36,
+        y: targetY - 36,
         damage: lastAction.damage,
         isPlayerAttack: isCorrect,
       }])
     }, 350)
 
-    // Combo
     if (isCorrect && comboCount >= 2) {
       setShowCombo(true)
       setTimeout(() => setShowCombo(false), 1200)
     }
 
-    // Cleanup old effects
     setTimeout(() => {
       setImpacts(prev => prev.filter(imp => Date.now() - imp.id < 500))
       setDamageNumbers(prev => prev.filter(dn => Date.now() - dn.id < 1000))
     }, 1500)
-  }, [lastAction, comboCount])
+  }, [lastAction, comboCount, viewport.width, viewport.height])
 
   const removeParticle = useCallback((id: number) => {
     setParticles(prev => prev.filter(p => p.id !== id))
@@ -242,7 +253,6 @@ const BattleEffects = ({ lastAction, comboCount }: BattleEffectsProps) => {
   return (
     <>
       <ScreenFlash type={flash} />
-      
       {showCombo && <ComboIndicator count={comboCount} />}
 
       {particles.map(p => (
@@ -264,16 +274,17 @@ const BattleEffects = ({ lastAction, comboCount }: BattleEffectsProps) => {
 
       {damageNumbers.map(dn => (
         <DamageNumber 
-          key={dn.id} 
-          x={dn.x} 
-          y={dn.y} 
-          damage={dn.damage} 
-          isPlayerAttack={dn.isPlayerAttack} 
+          key={dn.id}
+          x={dn.x}
+          y={dn.y}
+          damage={dn.damage}
+          isPlayerAttack={dn.isPlayerAttack}
         />
       ))}
     </>
   )
 }
+
 
 export default BattleEffects
 export { ComboIndicator, ScreenFlash, ImpactBurst, DamageNumber }
