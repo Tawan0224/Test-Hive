@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
+import { attemptsAPI } from '../services/api'
 
 // Sample achievements data (keep until achievements are implemented in backend)
 const sampleAchievements = [
@@ -35,57 +36,33 @@ const sampleAchievements = [
   },
 ]
 
-// Sample test history data (keep until quiz attempts are implemented in backend)
-const sampleTestHistory = [
-  {
-    id: 1,
-    title: 'Web Development MCQ',
-    type: 'multiple-choice',
-    score: 85,
-    completedAt: '2 days ago',
-  },
-  {
-    id: 2,
-    title: 'Computer Architecture Flash Card',
-    type: 'flashcard',
-    score: 92,
-    completedAt: '3 days ago',
-  },
-  {
-    id: 3,
-    title: 'Cloud Computing Matching',
-    type: 'matching',
-    score: 78,
-    completedAt: '4 days ago',
-  },
-  {
-    id: 4,
-    title: 'Micro-economic MCQ',
-    type: 'multiple-choice',
-    score: 90,
-    completedAt: '5 days ago',
-  },
-  {
-    id: 5,
-    title: 'Data Structures Quiz',
-    type: 'multiple-choice',
-    score: 95,
-    completedAt: '1 week ago',
-  },
-]
 
 const ProfilePage = () => {
   const navigate = useNavigate()
   const { user, isLoading, isAuthenticated } = useAuth()
   const [achievements] = useState(sampleAchievements)
-  const [testHistory] = useState(sampleTestHistory)
+  const [testHistory, setTestHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
 
   // Redirect to login only AFTER loading is complete and user is not authenticated
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login')
+    const fetchHistory = async () => {
+      try {
+        const response = await attemptsAPI.getMine()
+        if (response.success && response.data) {
+          setTestHistory((response.data as any).attempts)
+        }
+      } catch (err) {
+        console.error('Failed to fetch history:', err)
+      }
+      setHistoryLoading(false)
     }
-  }, [isLoading, isAuthenticated, navigate])
+    if (isAuthenticated) {
+      fetchHistory()
+    } else {
+      setHistoryLoading(false)
+    }
+  }, [isAuthenticated])
 
   const handleEditProfile = () => {
     navigate('/profile/edit')
@@ -271,36 +248,50 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {testHistory.map((test) => (
-                    <div
-                      key={test.id}
-                      onClick={() => console.log('View test:', test.id)}
-                      className="flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
-                               hover:border-[#8b949e] transition-colors duration-200 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="text-[#7d8590]">
-                          {getTypeIcon(test.type)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm text-[#c9d1d9] font-medium truncate">
-                            {test.title}
-                          </p>
-                          <p className="text-xs text-[#7d8590]">
-                            {test.completedAt}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-sm font-medium text-[#c9d1d9]">
-                          {test.score}%
-                        </span>
-                        <svg className="w-4 h-4 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
+                  {historyLoading ? (
+                    <div className="text-center py-6">
+                      <p className="text-[#7d8590] text-sm">Loading history...</p>
                     </div>
-                  ))}
+                  ) : testHistory.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-[#7d8590] text-sm">No quizzes taken yet. Start your first quiz!</p>
+                    </div>
+                  ) : (
+                    testHistory.map((test: any) => (
+                      <div
+                        key={test._id}
+                        onClick={() => console.log('View test:', test._id)}
+                        className="flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
+                                 hover:border-[#8b949e] transition-colors duration-200 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="text-[#7d8590]">
+                            {getTypeIcon(test.quizType)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm text-[#c9d1d9] font-medium truncate">
+                              {test.quizTitle}
+                            </p>
+                            <p className="text-xs text-[#7d8590]">
+                              {new Date(test.completedAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm font-medium text-[#c9d1d9]">
+                            {test.accuracy}%
+                          </span>
+                          <svg className="w-4 h-4 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* View All Link */}

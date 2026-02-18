@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { quizAPI } from '../services/api'
 
 // Import 3D Mascot Components (updated with battleState prop)
 import QuizBirdMascot from '../components/three/QuizBirdMascot'
@@ -25,6 +26,7 @@ interface QuizQuestion {
 interface QuizData {
   title: string
   questions: QuizQuestion[]
+  _id?: string  // from database
 }
 
 interface QuizResults {
@@ -263,7 +265,7 @@ const MultipleChoiceQuiz = () => {
     }
   }
 
-  const handleSubmitQuiz = useCallback(() => {
+  const handleSubmitQuiz = useCallback(async () => {
     if (isQuizComplete) return
     setIsQuizComplete(true)
     
@@ -274,12 +276,35 @@ const MultipleChoiceQuiz = () => {
       }
     })
 
+    const accuracy = Math.round((correctCount / totalQuestions) * 100)
+
     const results: QuizResults = {
       totalQuestions,
       correctAnswers: correctCount,
-      score: Math.round((correctCount / totalQuestions) * 100),
+      score: accuracy,
       answers: selectedAnswers,
       quizData
+    }
+
+    // Save attempt to backend if quiz has a DB id
+    if (quizData._id) {
+      try {
+        await quizAPI.submitAttempt(quizData._id, {
+          score: accuracy,
+          totalQuestions,
+          correctAnswers: correctCount,
+          accuracy,
+          timeSpentSeconds: 0,
+          answers: selectedAnswers.map((ansIdx, qIdx) => ({
+            questionIndex: qIdx,
+            userAnswer: ansIdx,
+            isCorrect: ansIdx !== null && quizData.questions[qIdx]?.options[ansIdx]?.isCorrect,
+            timeSpentSeconds: 0,
+          })),
+        })
+      } catch (err) {
+        console.error('Failed to save attempt:', err)
+      }
     }
 
     navigate('/quiz-results', { state: { results } })

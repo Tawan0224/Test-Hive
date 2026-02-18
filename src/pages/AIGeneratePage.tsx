@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Upload, ArrowUp, FileText, X, Loader2 } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import MascotBird from '../components/three/MascotBird'
+import { quizAPI } from '../services/api'
 
 // Types
 type QuizType = 'multiple-choice' | 'flashcard' | 'matching'
@@ -499,36 +500,79 @@ const AIGeneratePage = () => {
     }
 
     setIsGenerating(true)
-    
+
     try {
-      // Simulate API call delay
+      // Simulate API call delay (replace with real Gemini call later)
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       console.log('Generating quiz:', {
         type: selectedQuizType,
         count: selectedCount,
         prompt,
         file: uploadedFile.name,
       })
-      
-      // Navigate based on quiz type
+
+      // Build the payload for the backend
+      let quizPayload: any = {
+        title: '',
+        type: selectedQuizType,
+        difficulty: 'medium',
+        aiGenerated: true,
+        aiParameters: {
+          pdfSource: uploadedFile.name,
+          customInstructions: prompt,
+          generatedAt: new Date(),
+        },
+      }
+
+      // Generate sample data (keep your existing sample generators)
       if (selectedQuizType === 'multiple-choice') {
         const quizData = generateSampleQuizData()
-        navigate('/quiz/multiple-choice', { 
-          state: { quizData } 
-        })
+        quizPayload.title = quizData.title
+        quizPayload.questions = quizData.questions
       } else if (selectedQuizType === 'flashcard') {
         const flashcardData = generateSampleFlashcardData()
-        navigate('/quiz/flashcard', { 
-          state: { quizData: flashcardData } 
-        })
+        quizPayload.title = flashcardData.title
+        quizPayload.flashcards = flashcardData.cards.map((c: any) => ({
+          front: c.front,
+          back: c.back,
+          deckName: c.deckName || flashcardData.deckName || '',
+        }))
       } else if (selectedQuizType === 'matching') {
         const matchingData = generateSampleMatchingData()
-        navigate('/quiz/matching', { 
-          state: { quizData: matchingData } 
-        })
+        quizPayload.title = matchingData.title
+        quizPayload.matchingQuestions = [{
+          pairs: matchingData.pairs.map((p: any) => ({ left: p.left, right: p.right })),
+          timeLimit: matchingData.timeLimit,
+          points: matchingData.points,
+        }]
       }
-      
+
+      // Save quiz to backend
+      const response = await quizAPI.create(quizPayload)
+
+      if (response.success && response.data) {
+        const savedQuiz = (response.data as any).quiz
+
+        // Navigate with the DB _id included
+        if (selectedQuizType === 'multiple-choice') {
+          navigate('/quiz/multiple-choice', {
+            state: { quizData: { ...generateSampleQuizData(), _id: savedQuiz._id } }
+          })
+        } else if (selectedQuizType === 'flashcard') {
+          navigate('/quiz/flashcard', {
+            state: { quizData: { ...generateSampleFlashcardData(), _id: savedQuiz._id } }
+          })
+        } else if (selectedQuizType === 'matching') {
+          navigate('/quiz/matching', {
+            state: { quizData: { ...generateSampleMatchingData(), _id: savedQuiz._id } }
+          })
+        }
+      } else {
+        console.error('Failed to save quiz:', response.error)
+        alert(response.error?.message || 'Failed to save quiz. Please try again.')
+      }
+
     } catch (error) {
       console.error('Error generating quiz:', error)
       alert('Failed to generate quiz. Please try again.')

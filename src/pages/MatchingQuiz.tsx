@@ -5,6 +5,7 @@ import { CheckCircle, XCircle } from 'lucide-react'
 import QuizBirdMascot from '../components/three/QuizBirdMascot'
 import QuizOctopusMascot from '../components/three/QuizOctopusMascot'
 import { BattleHPBar, BattleEffects, useBattleSystem, BATTLE_CONFIG } from '../components/battle'
+import { quizAPI } from '../services/api'
 
 interface MatchingPair {
   id: string
@@ -17,6 +18,7 @@ interface MatchingQuizData {
   pairs: MatchingPair[]
   timeLimit: number
   points: number
+  _id?: string  // from database
 }
 
 interface MatchingResults {
@@ -186,13 +188,30 @@ const MatchingQuiz = () => {
     setSelectedRight(null)
   }
 
-  const handleComplete = useCallback(() => {
+  const handleComplete = useCallback(async () => {
+    const accuracy = Math.round((correctMatches.size / quizData.pairs.length) * 100)
+
+    // Save attempt to backend if quiz has a DB id
+    if (quizData._id) {
+      try {
+        await quizAPI.submitAttempt(quizData._id, {
+          score: accuracy,
+          totalQuestions: quizData.pairs.length,
+          correctAnswers: correctMatches.size,
+          accuracy,
+          timeSpentSeconds: quizData.timeLimit - timeRemaining,
+        })
+      } catch (err) {
+        console.error('Failed to save attempt:', err)
+      }
+    }
+
     navigate('/quiz-results', {
       state: {
         results: {
           totalQuestions: quizData.pairs.length,
           correctAnswers: correctMatches.size,
-          score: Math.round((correctMatches.size / quizData.pairs.length) * 100),
+          score: accuracy,
           answers: [],
           quizData: {
             title: quizData.title,
@@ -204,7 +223,7 @@ const MatchingQuiz = () => {
         }
       }
     })
-  }, [correctMatches.size, navigate, quizData])
+  }, [correctMatches.size, navigate, quizData, timeRemaining])
 
   const handleSubmit = () => { setIsComplete(true); handleComplete() }
   const handleLeaveQuiz = () => setShowLeaveConfirm(true)

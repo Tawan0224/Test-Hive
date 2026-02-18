@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, RotateCcw, Home, Layers } from 'lucide-react'
+import { quizAPI } from '../services/api'
 
 // Types
 interface Flashcard {
@@ -10,10 +11,12 @@ interface Flashcard {
   deckName: string
 }
 
+
 interface FlashcardQuizData {
   title: string
   cards: Flashcard[]
   deckName: string
+  _id?: string  // from database
 }
 
 // Sample flashcard data
@@ -97,10 +100,23 @@ const FlashcardQuiz = () => {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleFlip, handlePrevious, handleNext])
 
-  // Handle finishing the deck
-  const handleFinishDeck = () => {
+  const handleFinishDeck = async () => {
+    if (quizData._id) {
+      try {
+        await quizAPI.submitAttempt(quizData._id, {
+          score: 100,
+          totalQuestions: totalCards,
+          correctAnswers: totalCards,
+          accuracy: 100,
+          timeSpentSeconds: 0,
+        })
+      } catch (err) {
+        console.error('Failed to save attempt:', err)
+      }
+    }
     navigate('/home')
   }
+
 
   // Handle restart deck
   const handleRestartDeck = () => {
