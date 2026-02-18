@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Upload, ArrowUp, FileText, X, Loader2 } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import MascotBird from '../components/three/MascotBird'
-import { quizAPI } from '../services/api'
+import { aiAPI } from '../services/api'
 
 // Types
 type QuizType = 'multiple-choice' | 'flashcard' | 'matching'
@@ -15,58 +15,17 @@ interface UploadedFile {
   size: string
 }
 
-// Multiple Choice Types
-interface GeneratedQuestion {
-  questionText: string
-  options: { text: string; isCorrect: boolean }[]
-  timeLimit: number
-  points: number
-}
-
-interface GeneratedQuizData {
-  title: string
-  type: QuizType
-  questions: GeneratedQuestion[]
-}
-
-// Matching Quiz Types
-interface MatchingPair {
-  id: string
-  left: string
-  right: string
-}
-
-interface MatchingQuizData {
-  title: string
-  pairs: MatchingPair[]
-  timeLimit: number
-  points: number
-}
-
-// Flashcard Types
-interface Flashcard {
-  id: string
-  front: string
-  back: string
-  deckName: string
-}
-
-interface FlashcardQuizData {
-  title: string
-  cards: Flashcard[]
-  deckName: string
-}
-
 const AIGeneratePage = () => {
   const navigate = useNavigate()
-  
+
   const [selectedQuizType, setSelectedQuizType] = useState<QuizType>('multiple-choice')
   const [selectedCount, setSelectedCount] = useState<QuestionCount>(10)
   const [prompt, setPrompt] = useState('')
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  
+  const [generatingStatus, setGeneratingStatus] = useState('')
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const quizTypes: { value: QuizType; label: string }[] = [
@@ -85,18 +44,14 @@ const AIGeneratePage = () => {
 
   const handleFileSelect = useCallback((file: File) => {
     if (file.type !== 'application/pdf') {
-      alert('Please upload a PDF file')
+      alert('Please upload a PDF file only.')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB')
+      alert('File size must be less than 10MB.')
       return
     }
-    setUploadedFile({
-      file,
-      name: file.name,
-      size: formatFileSize(file.size),
-    })
+    setUploadedFile({ file, name: file.name, size: formatFileSize(file.size) })
   }, [])
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,461 +78,81 @@ const AIGeneratePage = () => {
 
   const removeFile = () => {
     setUploadedFile(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  // Generate sample Multiple Choice quiz data
-  const generateSampleQuizData = (): GeneratedQuizData => {
-    // Sample questions 
-    const sampleQuestions: GeneratedQuestion[] = [
-      {
-        questionText: "Which HTTP status code means the requested resource was found but moved permanently to a new URL?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "301", isCorrect: true },
-          { text: "404", isCorrect: false },
-          { text: "500", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates a successful request?",
-        options: [
-          { text: "200", isCorrect: true },
-          { text: "301", isCorrect: false },
-          { text: "404", isCorrect: false },
-          { text: "500", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Not Found'?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "301", isCorrect: false },
-          { text: "404", isCorrect: true },
-          { text: "500", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates an Internal Server Error?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "301", isCorrect: false },
-          { text: "404", isCorrect: false },
-          { text: "500", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Bad Request'?",
-        options: [
-          { text: "400", isCorrect: true },
-          { text: "401", isCorrect: false },
-          { text: "403", isCorrect: false },
-          { text: "405", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Unauthorized'?",
-        options: [
-          { text: "400", isCorrect: false },
-          { text: "401", isCorrect: true },
-          { text: "403", isCorrect: false },
-          { text: "405", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Forbidden'?",
-        options: [
-          { text: "400", isCorrect: false },
-          { text: "401", isCorrect: false },
-          { text: "403", isCorrect: true },
-          { text: "405", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Created'?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "201", isCorrect: true },
-          { text: "202", isCorrect: false },
-          { text: "204", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'No Content'?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "201", isCorrect: false },
-          { text: "202", isCorrect: false },
-          { text: "204", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates a temporary redirect?",
-        options: [
-          { text: "301", isCorrect: false },
-          { text: "302", isCorrect: true },
-          { text: "304", isCorrect: false },
-          { text: "307", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Not Modified'?",
-        options: [
-          { text: "301", isCorrect: false },
-          { text: "302", isCorrect: false },
-          { text: "304", isCorrect: true },
-          { text: "307", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Method Not Allowed'?",
-        options: [
-          { text: "400", isCorrect: false },
-          { text: "403", isCorrect: false },
-          { text: "404", isCorrect: false },
-          { text: "405", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Service Unavailable'?",
-        options: [
-          { text: "500", isCorrect: false },
-          { text: "502", isCorrect: false },
-          { text: "503", isCorrect: true },
-          { text: "504", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Gateway Timeout'?",
-        options: [
-          { text: "500", isCorrect: false },
-          { text: "502", isCorrect: false },
-          { text: "503", isCorrect: false },
-          { text: "504", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Bad Gateway'?",
-        options: [
-          { text: "500", isCorrect: false },
-          { text: "502", isCorrect: true },
-          { text: "503", isCorrect: false },
-          { text: "504", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Too Many Requests'?",
-        options: [
-          { text: "408", isCorrect: false },
-          { text: "418", isCorrect: false },
-          { text: "429", isCorrect: true },
-          { text: "451", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Accepted'?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "201", isCorrect: false },
-          { text: "202", isCorrect: true },
-          { text: "204", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Conflict'?",
-        options: [
-          { text: "406", isCorrect: false },
-          { text: "408", isCorrect: false },
-          { text: "409", isCorrect: true },
-          { text: "410", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Gone'?",
-        options: [
-          { text: "404", isCorrect: false },
-          { text: "408", isCorrect: false },
-          { text: "409", isCorrect: false },
-          { text: "410", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Request Timeout'?",
-        options: [
-          { text: "400", isCorrect: false },
-          { text: "408", isCorrect: true },
-          { text: "409", isCorrect: false },
-          { text: "410", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Payload Too Large'?",
-        options: [
-          { text: "411", isCorrect: false },
-          { text: "413", isCorrect: true },
-          { text: "414", isCorrect: false },
-          { text: "415", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Unsupported Media Type'?",
-        options: [
-          { text: "411", isCorrect: false },
-          { text: "413", isCorrect: false },
-          { text: "414", isCorrect: false },
-          { text: "415", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'I'm a teapot'?",
-        options: [
-          { text: "404", isCorrect: false },
-          { text: "418", isCorrect: true },
-          { text: "420", isCorrect: false },
-          { text: "451", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code indicates 'Unavailable For Legal Reasons'?",
-        options: [
-          { text: "403", isCorrect: false },
-          { text: "410", isCorrect: false },
-          { text: "418", isCorrect: false },
-          { text: "451", isCorrect: true }
-        ],
-        timeLimit: 30,
-        points: 10
-      },
-      {
-        questionText: "Which HTTP status code means 'Partial Content'?",
-        options: [
-          { text: "200", isCorrect: false },
-          { text: "204", isCorrect: false },
-          { text: "206", isCorrect: true },
-          { text: "208", isCorrect: false }
-        ],
-        timeLimit: 30,
-        points: 10
-      }
-    ]
-
-    // Return only the selected number of questions
-    return {
-      title: uploadedFile ? `Quiz from ${uploadedFile.name}` : 'Generated Quiz',
-      type: selectedQuizType,
-      questions: sampleQuestions.slice(0, selectedCount)
-    }
-  }
-
-  // Generate sample Matching quiz data
-  const generateSampleMatchingData = (): MatchingQuizData => {
-    // Sample HTTP status code pairs 
-    const allPairs: MatchingPair[] = [
-      { id: '1', left: '200', right: 'OK - Request succeeded' },
-      { id: '2', left: '201', right: 'Created - Resource created successfully' },
-      { id: '3', left: '204', right: 'No Content - Success with no response body' },
-      { id: '4', left: '301', right: 'Moved Permanently - URL changed permanently' },
-      { id: '5', left: '302', right: 'Found - Temporary redirect' },
-      { id: '6', left: '304', right: 'Not Modified - Cached version is valid' },
-      { id: '7', left: '400', right: 'Bad Request - Invalid syntax' },
-      { id: '8', left: '401', right: 'Unauthorized - Authentication required' },
-      { id: '9', left: '403', right: 'Forbidden - Access denied' },
-      { id: '10', left: '404', right: 'Not Found - Resource does not exist' },
-      { id: '11', left: '405', right: 'Method Not Allowed - HTTP method not supported' },
-      { id: '12', left: '408', right: 'Request Timeout - Server timed out waiting' },
-      { id: '13', left: '409', right: 'Conflict - Request conflicts with server state' },
-      { id: '14', left: '410', right: 'Gone - Resource permanently removed' },
-      { id: '15', left: '429', right: 'Too Many Requests - Rate limit exceeded' },
-      { id: '16', left: '500', right: 'Internal Server Error - Server encountered error' },
-      { id: '17', left: '502', right: 'Bad Gateway - Invalid response from upstream' },
-      { id: '18', left: '503', right: 'Service Unavailable - Server overloaded' },
-      { id: '19', left: '504', right: 'Gateway Timeout - Upstream server timeout' },
-      { id: '20', left: '418', right: "I'm a teapot - April Fools joke RFC" },
-      { id: '21', left: '451', right: 'Unavailable For Legal Reasons - Censored' },
-      { id: '22', left: '206', right: 'Partial Content - Range request fulfilled' },
-      { id: '23', left: '307', right: 'Temporary Redirect - Keep HTTP method' },
-      { id: '24', left: '308', right: 'Permanent Redirect - Keep HTTP method' },
-      { id: '25', left: '413', right: 'Payload Too Large - Request body too big' },
-    ]
-
-    return {
-      title: uploadedFile ? `Matching Quiz from ${uploadedFile.name}` : 'Generated Matching Quiz',
-      pairs: allPairs.slice(0, Math.min(selectedCount, allPairs.length)),
-      timeLimit: selectedCount * 12, // 12 seconds per pair
-      points: 10
-    }
-  }
-
-  // Generate sample Flashcard data
-  const generateSampleFlashcardData = (): FlashcardQuizData => {
-    const allCards: Flashcard[] = [
-      { id: '1', front: 'What does HTTP status code 200 mean?', back: 'OK - The request succeeded', deckName: 'HTTP Status Codes' },
-      { id: '2', front: 'What does HTTP status code 201 mean?', back: 'Created - A new resource was successfully created', deckName: 'HTTP Status Codes' },
-      { id: '3', front: 'What does HTTP status code 204 mean?', back: 'No Content - Success but no content to return', deckName: 'HTTP Status Codes' },
-      { id: '4', front: 'What does HTTP status code 301 mean?', back: 'Moved Permanently - Resource has moved to a new URL', deckName: 'HTTP Status Codes' },
-      { id: '5', front: 'What does HTTP status code 302 mean?', back: 'Found - Temporary redirect to another URL', deckName: 'HTTP Status Codes' },
-      { id: '6', front: 'What does HTTP status code 400 mean?', back: 'Bad Request - Server cannot process due to client error', deckName: 'HTTP Status Codes' },
-      { id: '7', front: 'What does HTTP status code 401 mean?', back: 'Unauthorized - Authentication is required', deckName: 'HTTP Status Codes' },
-      { id: '8', front: 'What does HTTP status code 403 mean?', back: 'Forbidden - Server refuses to authorize the request', deckName: 'HTTP Status Codes' },
-      { id: '9', front: 'What does HTTP status code 404 mean?', back: 'Not Found - The requested resource does not exist', deckName: 'HTTP Status Codes' },
-      { id: '10', front: 'What does HTTP status code 500 mean?', back: 'Internal Server Error - Unexpected server condition', deckName: 'HTTP Status Codes' },
-      { id: '11', front: 'What does HTTP status code 502 mean?', back: 'Bad Gateway - Invalid response from upstream server', deckName: 'HTTP Status Codes' },
-      { id: '12', front: 'What does HTTP status code 503 mean?', back: 'Service Unavailable - Server temporarily overloaded', deckName: 'HTTP Status Codes' },
-      { id: '13', front: 'What does HTTP status code 504 mean?', back: 'Gateway Timeout - Upstream server did not respond', deckName: 'HTTP Status Codes' },
-      { id: '14', front: 'What does HTTP status code 429 mean?', back: 'Too Many Requests - Rate limiting applied', deckName: 'HTTP Status Codes' },
-      { id: '15', front: 'What does HTTP status code 418 mean?', back: "I'm a teapot - April Fools joke (RFC 2324)", deckName: 'HTTP Status Codes' },
-      { id: '16', front: 'What are 1xx status codes?', back: 'Informational responses - Request received, continuing process', deckName: 'HTTP Status Codes' },
-      { id: '17', front: 'What are 2xx status codes?', back: 'Successful responses - Request received, understood, and accepted', deckName: 'HTTP Status Codes' },
-      { id: '18', front: 'What are 3xx status codes?', back: 'Redirection messages - Further action needs to be taken', deckName: 'HTTP Status Codes' },
-      { id: '19', front: 'What are 4xx status codes?', back: 'Client error responses - Request contains bad syntax or cannot be fulfilled', deckName: 'HTTP Status Codes' },
-      { id: '20', front: 'What are 5xx status codes?', back: 'Server error responses - Server failed to fulfill a valid request', deckName: 'HTTP Status Codes' },
-      { id: '21', front: 'What does HTTP status code 304 mean?', back: 'Not Modified - Cached version is still valid', deckName: 'HTTP Status Codes' },
-      { id: '22', front: 'What does HTTP status code 405 mean?', back: 'Method Not Allowed - HTTP method not supported for this resource', deckName: 'HTTP Status Codes' },
-      { id: '23', front: 'What does HTTP status code 408 mean?', back: 'Request Timeout - Server timed out waiting for the request', deckName: 'HTTP Status Codes' },
-      { id: '24', front: 'What does HTTP status code 409 mean?', back: 'Conflict - Request conflicts with current state of the server', deckName: 'HTTP Status Codes' },
-      { id: '25', front: 'What does HTTP status code 451 mean?', back: 'Unavailable For Legal Reasons - Content censored by government', deckName: 'HTTP Status Codes' },
-    ]
-
-    return {
-      title: uploadedFile ? `Flashcards from ${uploadedFile.name}` : 'Generated Flashcards',
-      cards: allCards.slice(0, selectedCount),
-      deckName: 'HTTP Status Codes'
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleGenerate = async () => {
     if (!uploadedFile) {
-      alert('Please upload a PDF file first')
+      alert('Please upload a PDF file first.')
       return
     }
 
     setIsGenerating(true)
+    setGeneratingStatus('Reading your PDF...')
 
     try {
-      // Simulate API call delay (replace with real Gemini call later)
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Small delay so the status message is visible
+      await new Promise(resolve => setTimeout(resolve, 400))
+      setGeneratingStatus('Generating questions with AI...')
 
-      console.log('Generating quiz:', {
-        type: selectedQuizType,
+      const response = await aiAPI.generateFromPDF({
+        file: uploadedFile.file,
+        quizType: selectedQuizType,
         count: selectedCount,
-        prompt,
-        file: uploadedFile.name,
+        customInstructions: prompt,
+        difficulty: 'medium',
       })
 
-      // Build the payload for the backend
-      let quizPayload: any = {
-        title: '',
-        type: selectedQuizType,
-        difficulty: 'medium',
-        aiGenerated: true,
-        aiParameters: {
-          pdfSource: uploadedFile.name,
-          customInstructions: prompt,
-          generatedAt: new Date(),
-        },
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Generation failed.')
       }
 
-      // Generate sample data (keep your existing sample generators)
+      const { quiz, generated } = response.data as any
+
+      setGeneratingStatus('Done! Loading your quiz...')
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Navigate to the correct quiz page with real generated data
       if (selectedQuizType === 'multiple-choice') {
-        const quizData = generateSampleQuizData()
-        quizPayload.title = quizData.title
-        quizPayload.questions = quizData.questions
+        navigate('/quiz/multiple-choice', {
+          state: {
+            quizData: {
+              _id: quiz._id,
+              title: generated.title,
+              questions: generated.questions,
+            },
+          },
+        })
       } else if (selectedQuizType === 'flashcard') {
-        const flashcardData = generateSampleFlashcardData()
-        quizPayload.title = flashcardData.title
-        quizPayload.flashcards = flashcardData.cards.map((c: any) => ({
-          front: c.front,
-          back: c.back,
-          deckName: c.deckName || flashcardData.deckName || '',
-        }))
+        navigate('/quiz/flashcard', {
+          state: {
+            quizData: {
+              _id: quiz._id,
+              title: generated.title,
+              cards: generated.cards,
+              deckName: generated.deckName,
+            },
+          },
+        })
       } else if (selectedQuizType === 'matching') {
-        const matchingData = generateSampleMatchingData()
-        quizPayload.title = matchingData.title
-        quizPayload.matchingQuestions = [{
-          pairs: matchingData.pairs.map((p: any) => ({ left: p.left, right: p.right })),
-          timeLimit: matchingData.timeLimit,
-          points: matchingData.points,
-        }]
+        navigate('/quiz/matching', {
+          state: {
+            quizData: {
+              _id: quiz._id,
+              title: generated.title,
+              pairs: generated.pairs,
+              timeLimit: generated.timeLimit || 120,
+              points: generated.points || 10,
+            },
+          },
+        })
       }
-
-      // Save quiz to backend
-      const response = await quizAPI.create(quizPayload)
-
-      if (response.success && response.data) {
-        const savedQuiz = (response.data as any).quiz
-
-        // Navigate with the DB _id included
-        if (selectedQuizType === 'multiple-choice') {
-          navigate('/quiz/multiple-choice', {
-            state: { quizData: { ...generateSampleQuizData(), _id: savedQuiz._id } }
-          })
-        } else if (selectedQuizType === 'flashcard') {
-          navigate('/quiz/flashcard', {
-            state: { quizData: { ...generateSampleFlashcardData(), _id: savedQuiz._id } }
-          })
-        } else if (selectedQuizType === 'matching') {
-          navigate('/quiz/matching', {
-            state: { quizData: { ...generateSampleMatchingData(), _id: savedQuiz._id } }
-          })
-        }
-      } else {
-        console.error('Failed to save quiz:', response.error)
-        alert(response.error?.message || 'Failed to save quiz. Please try again.')
-      }
-
-    } catch (error) {
-      console.error('Error generating quiz:', error)
-      alert('Failed to generate quiz. Please try again.')
+    } catch (error: any) {
+      console.error('Generation error:', error)
+      alert(error.message || 'Failed to generate quiz. Please try again.')
     } finally {
       setIsGenerating(false)
+      setGeneratingStatus('')
     }
   }
 
@@ -589,20 +164,17 @@ const AIGeneratePage = () => {
   return (
     <div className="fixed inset-0 overflow-hidden">
       <Navbar />
-      
+
       {/* Main Content */}
       <main className="h-full pt-20 pb-28 px-8">
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between gap-8 h-full">
-            
+
             {/* Left Side - 3D Mascot */}
             <div className="flex-1 h-full flex items-center justify-center relative">
-              {/* Glow effect */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-[400px] h-[400px] rounded-full bg-purple-500/10 blur-[100px]" />
               </div>
-              
-              {/* 3D Canvas Container */}
               <div className="w-full h-[450px] relative z-10">
                 <MascotBird />
               </div>
@@ -611,9 +183,8 @@ const AIGeneratePage = () => {
             {/* Right Side - Options Panel */}
             <div className="w-[520px] flex-shrink-0">
               <div className="relative bg-[#1a1a2e]/80 backdrop-blur-xl rounded-3xl border border-purple-500/20 p-10">
-                {/* Gradient overlay */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none" />
-                
+
                 <div className="relative space-y-10">
                   {/* Quiz Type Selection */}
                   <div>
@@ -646,7 +217,13 @@ const AIGeneratePage = () => {
                   {/* Question Count */}
                   <div>
                     <h3 className="text-white/90 text-lg font-medium mb-5">
-                      Choose the number of {selectedQuizType === 'matching' ? 'pairs' : selectedQuizType === 'flashcard' ? 'cards' : 'questions'} to generate
+                      Choose the number of{' '}
+                      {selectedQuizType === 'matching'
+                        ? 'pairs'
+                        : selectedQuizType === 'flashcard'
+                        ? 'cards'
+                        : 'questions'}{' '}
+                      to generate
                     </h3>
                     <div className="flex gap-3">
                       {questionCounts.map((count) => (
@@ -667,6 +244,14 @@ const AIGeneratePage = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Generating status indicator */}
+                  {isGenerating && generatingStatus && (
+                    <div className="flex items-center gap-3 py-3 px-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                      <Loader2 className="w-4 h-4 text-purple-400 animate-spin flex-shrink-0" />
+                      <span className="text-purple-300 text-sm">{generatingStatus}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -677,9 +262,9 @@ const AIGeneratePage = () => {
       {/* Bottom Input Bar - Fixed */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a1a] via-[#0a0a1a]/95 to-transparent pt-8 pb-6 px-8">
         <div className="max-w-4xl mx-auto">
-          {/* Input Container */}
           <form onSubmit={handlePromptSubmit} className="relative">
             <div className="relative flex items-center gap-3 p-2 bg-[#12121f]/90 border border-white/10 rounded-full backdrop-blur-xl">
+
               {/* PDF Upload Area */}
               <div
                 onDragOver={handleDragOver}
@@ -695,13 +280,14 @@ const AIGeneratePage = () => {
                   className="hidden"
                   id="pdf-upload"
                 />
-                
+
                 {uploadedFile ? (
                   <div className="flex items-center gap-2 py-2.5 px-4 bg-[#1a1a2e]/80 border border-purple-500/30 rounded-full">
                     <FileText className="w-4 h-4 text-purple-400" />
                     <span className="text-white/80 text-sm max-w-[120px] truncate">
                       {uploadedFile.name}
                     </span>
+                    <span className="text-white/40 text-xs">{uploadedFile.size}</span>
                     <button
                       type="button"
                       onClick={removeFile}
@@ -714,11 +300,11 @@ const AIGeneratePage = () => {
                   <label
                     htmlFor="pdf-upload"
                     className={`
-                      flex items-center gap-2 py-3.5 px-5 
+                      flex items-center gap-2 py-3.5 px-5
                       bg-[#1a1a2e]/80 border rounded-full cursor-pointer
                       transition-all duration-200
-                      ${isDragging 
-                        ? 'border-purple-500 bg-purple-500/10' 
+                      ${isDragging
+                        ? 'border-purple-500 bg-purple-500/10'
                         : 'border-white/10 hover:border-white/20'
                       }
                     `}
@@ -737,8 +323,9 @@ const AIGeneratePage = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Add custom instructions (optional)..."
-                className="flex-1 bg-transparent text-white/90 placeholder:text-white/30 
-                           outline-none text-sm px-2"
+                disabled={isGenerating}
+                className="flex-1 bg-transparent text-white/90 placeholder:text-white/30
+                           outline-none text-sm px-2 disabled:opacity-50"
               />
 
               {/* Generate Button */}
@@ -762,9 +349,14 @@ const AIGeneratePage = () => {
             </div>
           </form>
 
-          {/* Helper text */}
           <p className="mt-3 text-center text-white/30 text-xs">
-            Upload a PDF and let AI generate {selectedQuizType === 'matching' ? 'matching pairs' : selectedQuizType === 'flashcard' ? 'flashcards' : 'quiz questions'} for you
+            Upload a PDF and let AI generate{' '}
+            {selectedQuizType === 'matching'
+              ? 'matching pairs'
+              : selectedQuizType === 'flashcard'
+              ? 'flashcards'
+              : 'quiz questions'}{' '}
+            for you
           </p>
         </div>
       </div>
