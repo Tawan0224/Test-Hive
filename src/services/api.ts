@@ -39,7 +39,7 @@ async function request<T>(
   }
 }
 
-// ── Auth API (existing) ──
+// ── Auth API ──
 export const authAPI = {
   signup: (email: string, password: string, username: string) =>
     request('/auth/signup', {
@@ -74,9 +74,8 @@ export const authAPI = {
     }),
 };
 
-// ── Quiz API (new) ──
+// ── Quiz API ──
 export const quizAPI = {
-  // Create a new quiz
   create: (quizData: {
     title: string;
     description?: string;
@@ -94,20 +93,11 @@ export const quizAPI = {
       body: JSON.stringify(quizData),
     }),
 
-  // Get all quizzes created by current user
   getMine: () => request('/quizzes/mine'),
-
-  // Get a single quiz by ID
   getById: (id: string) => request(`/quizzes/${id}`),
-
-  // Get a quiz by share code
   getByShareCode: (code: string) => request(`/quizzes/share/${code}`),
+  delete: (id: string) => request(`/quizzes/${id}`, { method: 'DELETE' }),
 
-  // Delete a quiz
-  delete: (id: string) =>
-    request(`/quizzes/${id}`, { method: 'DELETE' }),
-
-  // Submit a quiz attempt
   submitAttempt: (quizId: string, attemptData: {
     answers?: any[];
     score: number;
@@ -123,9 +113,53 @@ export const quizAPI = {
     }),
 };
 
-// ── Attempts API (new) ──
+// ── AI API ──
+export const aiAPI = {
+  /**
+   * Generate a quiz from a PDF file using Gemini AI.
+   * Uses FormData (multipart) so we bypass the JSON request helper.
+   */
+  generateFromPDF: async (params: {
+    file: File;
+    quizType: 'multiple-choice' | 'flashcard' | 'matching';
+    count: 10 | 15 | 20;
+    customInstructions?: string;
+    difficulty?: string;
+  }): Promise<ApiResponse> => {
+    const token = localStorage.getItem('testhive_token');
+
+    const formData = new FormData();
+    formData.append('pdf', params.file);
+    formData.append('quizType', params.quizType);
+    formData.append('count', String(params.count));
+    formData.append('customInstructions', params.customInstructions || '');
+    formData.append('difficulty', params.difficulty || 'medium');
+
+    try {
+      const response = await fetch(`${API_URL}/ai/generate`, {
+        method: 'POST',
+        headers: {
+          // DO NOT set Content-Type here — browser sets it automatically with boundary for FormData
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: 'Unable to connect to server. Please try again.',
+        },
+      };
+    }
+  },
+};
+
+// ── Attempts API ──
 export const attemptsAPI = {
-  // Get current user's attempt history
   getMine: () => request('/attempts/mine'),
 };
 
