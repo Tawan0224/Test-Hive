@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouteFade } from "../components/layout/RouteFadeProvider";
 import Button from "../components/ui/Button";
 import TreasureChest from "../components/three/TreasureChest";
+import { useNavigate } from 'react-router-dom'
+import { quizAPI } from '../services/api'
 
 // Team members data
 const teamMembers = [
@@ -50,6 +52,7 @@ const features = [
 
 const HomePage = () => {
   const { fadeTo } = useRouteFade();
+  const navigate = useNavigate();
   const aboutRef = useRef<HTMLElement>(null);
   const joinRef = useRef<HTMLElement>(null); 
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -58,6 +61,69 @@ const HomePage = () => {
   // Navbar visibility state
   const [navbarVisible, setNavbarVisible] = useState(true);
   const lastScrollY = useRef(0);
+
+  // Join quiz state
+  const [joinCode, setJoinCode] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [joinLoading, setJoinLoading] = useState(false);
+
+  // Join quiz handler
+  const handleJoinQuiz = async () => {
+    if (!joinCode.trim()) return
+    setJoinError('')
+    setJoinLoading(true)
+
+    try {
+      const response = await quizAPI.getByShareCode(joinCode.trim())
+      setJoinLoading(false)
+
+      if (response.success && response.data) {
+        const quiz = (response.data as any).quiz
+
+        if (quiz.type === 'multiple-choice') {
+          navigate('/quiz/multiple-choice', {
+            state: { quizData: { ...quiz } }
+          })
+        } else if (quiz.type === 'matching') {
+          const mq = quiz.matchingQuestions[0]
+          navigate('/quiz/matching', {
+            state: {
+              quizData: {
+                _id: quiz._id,
+                title: quiz.title,
+                pairs: mq.pairs.map((p: any, i: number) => ({
+                  id: String(i + 1), left: p.left, right: p.right
+                })),
+                timeLimit: mq.timeLimit,
+                points: mq.points,
+              }
+            }
+          })
+        } else if (quiz.type === 'flashcard') {
+          navigate('/quiz/flashcard', {
+            state: {
+              quizData: {
+                _id: quiz._id,
+                title: quiz.title,
+                cards: quiz.flashcards.map((f: any, i: number) => ({
+                  id: String(i + 1),
+                  front: f.front,
+                  back: f.back,
+                  deckName: f.deckName,
+                })),
+                deckName: quiz.flashcards[0]?.deckName || quiz.title,
+              }
+            }
+          })
+        }
+      } else {
+        setJoinError(response.error?.message || 'Quiz not found with this code')
+      }
+    } catch (err) {
+      setJoinLoading(false)
+      setJoinError('Failed to join quiz. Please try again.')
+    }
+  }
 
   // Smooth scroll function
   const scrollToSection = (ref: React.RefObject<HTMLElement>) => {
@@ -288,18 +354,29 @@ const HomePage = () => {
                   <input
                     type="text"
                     placeholder="Enter PIN"
-                    maxLength={6}
+                    maxLength={8}
+                    value={joinCode}
+                    onChange={(e) => {
+                      setJoinCode(e.target.value.toUpperCase())
+                      setJoinError('')
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleJoinQuiz()}
                     className="flex-1 px-6 py-4 bg-dark-700/50 border border-white/10 rounded-xl 
-                             text-white placeholder-white/30 font-mono text-lg tracking-widest text-center
-                             focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20
-                             transition-all duration-300 uppercase"
+                            text-white placeholder-white/30 font-mono text-lg tracking-widest text-center
+                            focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20
+                            transition-all duration-300 uppercase"
                   />
-                  <Button className="px-8 py-4">
-                    Join
+                  <Button onClick={handleJoinQuiz} className="px-8 py-4" disabled={joinLoading}>
+                    {joinLoading ? 'Joining...' : 'Join'}
                   </Button>
                 </div>
               </div>
             </div>
+
+            {/* Error message */}
+            {joinError && (
+              <p className="text-red-400 text-sm text-center mt-3 font-body">{joinError}</p>
+            )}
           </div>
         </div>
       </section>

@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.js';
+import quizRoutes from './src/routes/quiz.js';
+import attemptRoutes from './src/routes/attempts.js';
 
 dotenv.config();
 
@@ -22,10 +24,12 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // increased for quiz data
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/attempts', attemptRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

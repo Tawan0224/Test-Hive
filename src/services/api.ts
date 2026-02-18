@@ -39,7 +39,7 @@ async function request<T>(
   }
 }
 
-// Auth API calls
+// ── Auth API (existing) ──
 export const authAPI = {
   signup: (email: string, password: string, username: string) =>
     request('/auth/signup', {
@@ -72,6 +72,61 @@ export const authAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+};
+
+// ── Quiz API (new) ──
+export const quizAPI = {
+  // Create a new quiz
+  create: (quizData: {
+    title: string;
+    description?: string;
+    type: 'multiple-choice' | 'matching' | 'flashcard';
+    difficulty?: string;
+    questions?: any[];
+    matchingQuestions?: any[];
+    flashcards?: any[];
+    tags?: string[];
+    aiGenerated?: boolean;
+    aiParameters?: any;
+  }) =>
+    request('/quizzes', {
+      method: 'POST',
+      body: JSON.stringify(quizData),
+    }),
+
+  // Get all quizzes created by current user
+  getMine: () => request('/quizzes/mine'),
+
+  // Get a single quiz by ID
+  getById: (id: string) => request(`/quizzes/${id}`),
+
+  // Get a quiz by share code
+  getByShareCode: (code: string) => request(`/quizzes/share/${code}`),
+
+  // Delete a quiz
+  delete: (id: string) =>
+    request(`/quizzes/${id}`, { method: 'DELETE' }),
+
+  // Submit a quiz attempt
+  submitAttempt: (quizId: string, attemptData: {
+    answers?: any[];
+    score: number;
+    totalQuestions: number;
+    correctAnswers: number;
+    accuracy: number;
+    timeSpentSeconds?: number;
+    weakTopics?: string[];
+  }) =>
+    request(`/quizzes/${quizId}/attempts`, {
+      method: 'POST',
+      body: JSON.stringify(attemptData),
+    }),
+};
+
+// ── Attempts API (new) ──
+export const attemptsAPI = {
+  // Get current user's attempt history
+  getMine: () => request('/attempts/mine'),
 };
 
 export default request;
