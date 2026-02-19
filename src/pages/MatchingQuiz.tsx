@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 
 import QuizBirdMascot from '../components/three/QuizBirdMascot'
 import QuizOctopusMascot from '../components/three/QuizOctopusMascot'
@@ -18,15 +18,7 @@ interface MatchingQuizData {
   pairs: MatchingPair[]
   timeLimit: number
   points: number
-  _id?: string  // from database
-}
-
-interface MatchingResults {
-  totalPairs: number
-  correctMatches: number
-  score: number
-  timeSpent: number
-  quizData: MatchingQuizData
+  _id?: string
 }
 
 const sampleMatchingData: MatchingQuizData = {
@@ -63,33 +55,39 @@ const MatchingQuiz = () => {
   const leftItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const rightItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
+  // Shuffled display order (these are the full pair objects, just reordered)
   const [shuffledLeft, setShuffledLeft] = useState<MatchingPair[]>([])
   const [shuffledRight, setShuffledRight] = useState<MatchingPair[]>([])
-  const [selectedLeft, setSelectedLeft] = useState<string | null>(null)
-  const [selectedRight, setSelectedRight] = useState<string | null>(null)
-  const [matches, setMatches] = useState<Map<string, string>>(new Map())
-  const [correctMatches, setCorrectMatches] = useState<Set<string>>(new Set())
-  const [incorrectAttempts, setIncorrectAttempts] = useState<Set<string>>(new Set())
+
+  // Which item is currently selected (stores the pair.id)
+  const [selectedLeftId, setSelectedLeftId] = useState<string | null>(null)
+  const [selectedRightId, setSelectedRightId] = useState<string | null>(null)
+
+  // Set of pair IDs that have been correctly matched
+  // e.g. if pair {id:'3', left:'404', right:'Not Found'} is matched, '3' is added here
+  const [matchedPairIds, setMatchedPairIds] = useState<Set<string>>(new Set())
+
+  // For SVG lines: leftId -> rightId (always same since correct match means same id)
+  const [connectionLines, setConnectionLines] = useState<Array<{
+    startX: number; startY: number; endX: number; endY: number; id: string
+  }>>([])
+
+  // Brief flash state for wrong attempts
+  const [wrongFlashLeftId, setWrongFlashLeftId] = useState<string | null>(null)
+  const [wrongFlashRightId, setWrongFlashRightId] = useState<string | null>(null)
+
   const [timeRemaining, setTimeRemaining] = useState(quizData.timeLimit)
   const [isComplete, setIsComplete] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
-  const [connectionLines, setConnectionLines] = useState<Array<{
-    startX: number; startY: number; endX: number; endY: number
-    isCorrect: boolean; id: string
-  }>>([])
 
-  // Track total match attempts (both correct and incorrect) for progress display
-  const [totalAttempts, setTotalAttempts] = useState(0)
-
-  // ─── BATTLE SYSTEM (pass total pairs for dynamic HP scaling) ────
   const [battle, battleActions] = useBattleSystem(quizData.pairs.length)
 
   useEffect(() => {
-    setShuffledLeft(shuffleArray(quizData.pairs))
-    setShuffledRight(shuffleArray(quizData.pairs))
+    setShuffledLeft(shuffleArray([...quizData.pairs]))
+    setShuffledRight(shuffleArray([...quizData.pairs]))
   }, [quizData.pairs])
 
-  // ─── AUTO-END WHEN BIRD HP REACHES 0 ──────────────────────────
+  // Auto-end when bird HP reaches 0
   useEffect(() => {
     if (battle.birdDefeated && !isComplete) {
       const timeout = setTimeout(() => {
@@ -100,6 +98,7 @@ const MatchingQuiz = () => {
     }
   }, [battle.birdDefeated, isComplete])
 
+  // Timer
   useEffect(() => {
     if (isComplete || timeRemaining <= 0) return
     const timer = setInterval(() => {
@@ -111,17 +110,23 @@ const MatchingQuiz = () => {
     return () => clearInterval(timer)
   }, [isComplete, timeRemaining])
 
+  // Auto-complete when all pairs matched
   useEffect(() => {
-    if (correctMatches.size === quizData.pairs.length) setIsComplete(true)
-  }, [correctMatches.size, quizData.pairs.length])
+    if (quizData.pairs.length > 0 && matchedPairIds.size === quizData.pairs.length) {
+      setIsComplete(true)
+    }
+  }, [matchedPairIds.size, quizData.pairs.length])
 
+  // Draw SVG connection lines for matched pairs
   const updateConnectionLines = useCallback(() => {
     if (!containerRef.current) return
     const containerRect = containerRef.current.getBoundingClientRect()
     const lines: typeof connectionLines = []
-    matches.forEach((rightId, leftId) => {
-      const leftEl = leftItemRefs.current.get(leftId)
-      const rightEl = rightItemRefs.current.get(rightId)
+
+    matchedPairIds.forEach((pairId) => {
+      // Left item ref key = pairId, right item ref key = pairId (same pair)
+      const leftEl = leftItemRefs.current.get(pairId)
+      const rightEl = rightItemRefs.current.get(pairId)
       if (leftEl && rightEl) {
         const leftRect = leftEl.getBoundingClientRect()
         const rightRect = rightEl.getBoundingClientRect()
@@ -130,13 +135,12 @@ const MatchingQuiz = () => {
           startY: leftRect.top + leftRect.height / 2 - containerRect.top,
           endX: rightRect.left - containerRect.left,
           endY: rightRect.top + rightRect.height / 2 - containerRect.top,
-          isCorrect: correctMatches.has(leftId),
-          id: `${leftId}-${rightId}`
+          id: pairId
         })
       }
     })
     setConnectionLines(lines)
-  }, [matches, correctMatches])
+  }, [matchedPairIds])
 
   useEffect(() => {
     updateConnectionLines()
@@ -144,60 +148,83 @@ const MatchingQuiz = () => {
     return () => window.removeEventListener('resize', updateConnectionLines)
   }, [updateConnectionLines])
 
-  const handleLeftClick = (pair: MatchingPair) => {
-    if (isComplete || correctMatches.has(pair.id) || battle.birdDefeated) return
-    if (selectedLeft === pair.id) { setSelectedLeft(null); return }
-    setSelectedLeft(pair.id)
-    if (selectedRight) tryMatch(pair.id, selectedRight)
-  }
+  // ─── MATCH ATTEMPT ────────────────────────────────────────────
+  // Called when both a left and right item are selected.
+  // leftId = the pair.id of the selected LEFT item
+  // rightId = the pair.id of the selected RIGHT item
+  // A correct match means leftId === rightId (same pair)
+  const attemptMatch = useCallback((leftId: string, rightId: string) => {
+    // Clear selections immediately
+    setSelectedLeftId(null)
+    setSelectedRightId(null)
 
-  const handleRightClick = (pair: MatchingPair) => {
-    if (isComplete || battle.birdDefeated) return
-    const isAlreadyMatched = Array.from(matches.entries()).some(
-      ([leftId, rightId]) => rightId === pair.id && correctMatches.has(leftId)
-    )
-    if (isAlreadyMatched) return
-    if (selectedRight === pair.id) { setSelectedRight(null); return }
-    setSelectedRight(pair.id)
-    if (selectedLeft) tryMatch(selectedLeft, pair.id)
-  }
-
-  // ─── TRY MATCH (with battle trigger) ──────────────────────────
-  const tryMatch = (leftId: string, rightId: string) => {
-    const leftPair = quizData.pairs.find(p => p.id === leftId)
-    const rightPair = quizData.pairs.find(p => p.id === rightId)
-    if (!leftPair || !rightPair) return
-
-    const newMatches = new Map(matches)
-    newMatches.set(leftId, rightId)
-    setMatches(newMatches)
-    setTotalAttempts(prev => prev + 1)
-
-    if (leftPair.id === rightPair.id) {
-      // ✅ Correct - Bird attacks Octopus!
-      setCorrectMatches(prev => new Set([...prev, leftId]))
-      setIncorrectAttempts(prev => { const s = new Set(prev); s.delete(leftId); return s })
+    if (leftId === rightId) {
+      // ✅ CORRECT — same pair id means left term matches right definition
+      setMatchedPairIds(prev => new Set([...prev, leftId]))
       battleActions.triggerCorrectAnswer()
     } else {
-      // ❌ Wrong - Octopus attacks Bird!
-      setIncorrectAttempts(prev => new Set([...prev, leftId]))
+      // ❌ WRONG — flash both items red briefly
+      setWrongFlashLeftId(leftId)
+      setWrongFlashRightId(rightId)
+      setTimeout(() => {
+        setWrongFlashLeftId(null)
+        setWrongFlashRightId(null)
+      }, 700)
       battleActions.triggerWrongAnswer()
     }
+  }, [battleActions])
 
-    setSelectedLeft(null)
-    setSelectedRight(null)
+  // ─── LEFT CLICK ───────────────────────────────────────────────
+  const handleLeftClick = (pair: MatchingPair) => {
+    // Ignore if already correctly matched or game over
+    if (isComplete || matchedPairIds.has(pair.id) || battle.birdDefeated) return
+
+    // Clicking same selected item = deselect
+    if (selectedLeftId === pair.id) {
+      setSelectedLeftId(null)
+      return
+    }
+
+    // If a right item is already selected, attempt the match now
+    if (selectedRightId !== null) {
+      attemptMatch(pair.id, selectedRightId)
+      return
+    }
+
+    // Otherwise just select this left item
+    setSelectedLeftId(pair.id)
+  }
+
+  // ─── RIGHT CLICK ──────────────────────────────────────────────
+  const handleRightClick = (pair: MatchingPair) => {
+    // Ignore if already correctly matched or game over
+    if (isComplete || matchedPairIds.has(pair.id) || battle.birdDefeated) return
+
+    // Clicking same selected item = deselect
+    if (selectedRightId === pair.id) {
+      setSelectedRightId(null)
+      return
+    }
+
+    // If a left item is already selected, attempt the match now
+    if (selectedLeftId !== null) {
+      attemptMatch(selectedLeftId, pair.id)
+      return
+    }
+
+    // Otherwise just select this right item
+    setSelectedRightId(pair.id)
   }
 
   const handleComplete = useCallback(async () => {
-    const accuracy = Math.round((correctMatches.size / quizData.pairs.length) * 100)
+    const accuracy = Math.round((matchedPairIds.size / quizData.pairs.length) * 100)
 
-    // Save attempt to backend if quiz has a DB id
     if (quizData._id) {
       try {
         await quizAPI.submitAttempt(quizData._id, {
           score: accuracy,
           totalQuestions: quizData.pairs.length,
-          correctAnswers: correctMatches.size,
+          correctAnswers: matchedPairIds.size,
           accuracy,
           timeSpentSeconds: quizData.timeLimit - timeRemaining,
         })
@@ -210,7 +237,7 @@ const MatchingQuiz = () => {
       state: {
         results: {
           totalQuestions: quizData.pairs.length,
-          correctAnswers: correctMatches.size,
+          correctAnswers: matchedPairIds.size,
           score: accuracy,
           answers: [],
           quizData: {
@@ -223,14 +250,14 @@ const MatchingQuiz = () => {
         }
       }
     })
-  }, [correctMatches.size, navigate, quizData, timeRemaining])
+  }, [matchedPairIds.size, navigate, quizData, timeRemaining])
 
   const handleSubmit = () => { setIsComplete(true); handleComplete() }
   const handleLeaveQuiz = () => setShowLeaveConfirm(true)
   const confirmLeaveQuiz = () => navigate('/home')
 
   const timerPercentage = (timeRemaining / quizData.timeLimit) * 100
-  const progressPercentage = (correctMatches.size / quizData.pairs.length) * 100
+  const progressPercentage = (matchedPairIds.size / quizData.pairs.length) * 100
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -239,7 +266,7 @@ const MatchingQuiz = () => {
 
   return (
     <div className={`h-screen w-screen relative overflow-hidden ${battle.screenShake ? 'animate-battle-screen-shake' : ''}`}>
-      {/* Ambient background effects */}
+      {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
@@ -249,9 +276,9 @@ const MatchingQuiz = () => {
       {/* ─── LEFT HP BAR ─── */}
       <div className="absolute top-[280px] left-20 z-30 pointer-events-none">
         <BattleHPBar current={battle.birdHP} max={BATTLE_CONFIG.BIRD_MAX_HP}
-          name="Bird" side="left" isHit={battle.isBirdHit}/>
+          name="Bird" side="left" isHit={battle.isBirdHit} />
       </div>
-      {/* ─── LEFT MASCOT: BIRD (Player) ─── */}
+      {/* ─── BIRD MASCOT ─── */}
       <div className="absolute -left-32 bottom-2 w-[860px] h-[920px] z-10 pointer-events-none overflow-visible">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
@@ -259,14 +286,12 @@ const MatchingQuiz = () => {
       {/* ─── RIGHT HP BAR ─── */}
       <div className="absolute top-[280px] right-20 z-30 pointer-events-none">
         <BattleHPBar current={battle.octopusHP} max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
-          name="Octopus" side="right" isHit={battle.isOctopusHit}/>
+          name="Octopus" side="right" isHit={battle.isOctopusHit} />
       </div>
-      {/* ─── RIGHT MASCOT: OCTOPUS (Enemy) ─── */}
+      {/* ─── OCTOPUS MASCOT ─── */}
       <div className="absolute -right-36 -bottom-20 w-[780px] h-[880px] z-10 pointer-events-none overflow-visible">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
-
-
 
       {/* ─── BATTLE EFFECTS ─── */}
       <div className="absolute inset-0 z-25 pointer-events-none">
@@ -303,7 +328,11 @@ const MatchingQuiz = () => {
                 <div className="h-full rounded-full transition-all duration-1000 ease-linear relative"
                   style={{
                     width: `${timerPercentage}%`,
-                    background: timerPercentage > 50 ? 'linear-gradient(90deg, #3B82F6, #60a5fa)' : timerPercentage > 25 ? 'linear-gradient(90deg, #d97706, #fbbf24)' : 'linear-gradient(90deg, #dc2626, #f87171)'
+                    background: timerPercentage > 50
+                      ? 'linear-gradient(90deg, #3B82F6, #60a5fa)'
+                      : timerPercentage > 25
+                        ? 'linear-gradient(90deg, #d97706, #fbbf24)'
+                        : 'linear-gradient(90deg, #dc2626, #f87171)'
                   }}>
                   <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20" />
                 </div>
@@ -312,7 +341,7 @@ const MatchingQuiz = () => {
             <div className="text-right">
               <p className="text-white/80 text-sm font-medium tracking-wide font-body">Pairs Matched</p>
               <p className="text-white text-3xl font-bold mt-1 font-display">
-                <span className="text-hive-purple-light">{correctMatches.size}</span>
+                <span className="text-hive-purple-light">{matchedPairIds.size}</span>
                 <span className="text-white/40">/</span>
                 <span>{quizData.pairs.length}</span>
               </p>
@@ -340,78 +369,101 @@ const MatchingQuiz = () => {
         {/* Matching Area */}
         <div className="flex-1 px-8 py-4 overflow-y-auto">
           <div ref={containerRef} className="max-w-4xl mx-auto relative min-h-full">
-            {/* SVG Connection Lines */}
-            <svg className="absolute top-0 left-0 w-full pointer-events-none z-10" style={{ height: '100%', minHeight: '100%' }}>
+
+            {/* SVG Lines — only for correct matches */}
+            <svg className="absolute top-0 left-0 w-full pointer-events-none z-10"
+              style={{ height: '100%', minHeight: '100%' }}>
               <defs>
                 <linearGradient id="correctGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#22c55e" stopOpacity="0.8" />
                   <stop offset="100%" stopColor="#4ade80" stopOpacity="0.8" />
                 </linearGradient>
-                <linearGradient id="incorrectGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#f87171" stopOpacity="0.6" />
-                </linearGradient>
               </defs>
               {connectionLines.map(line => (
                 <g key={line.id}>
-                  <path d={`M ${line.startX} ${line.startY} C ${line.startX + 50} ${line.startY}, ${line.endX - 50} ${line.endY}, ${line.endX} ${line.endY}`}
-                    fill="none" stroke={line.isCorrect ? '#22c55e' : '#ef4444'} strokeWidth="8" strokeOpacity="0.2" filter="blur(4px)" />
-                  <path d={`M ${line.startX} ${line.startY} C ${line.startX + 50} ${line.startY}, ${line.endX - 50} ${line.endY}, ${line.endX} ${line.endY}`}
-                    fill="none" stroke={`url(#${line.isCorrect ? 'correctGradient' : 'incorrectGradient'})`} strokeWidth="3" strokeLinecap="round" className="transition-all duration-300" />
-                  <circle cx={line.startX} cy={line.startY} r="6" fill={line.isCorrect ? '#22c55e' : '#ef4444'} />
-                  <circle cx={line.endX} cy={line.endY} r="6" fill={line.isCorrect ? '#22c55e' : '#ef4444'} />
+                  <path
+                    d={`M ${line.startX} ${line.startY} C ${line.startX + 50} ${line.startY}, ${line.endX - 50} ${line.endY}, ${line.endX} ${line.endY}`}
+                    fill="none" stroke="#22c55e" strokeWidth="8" strokeOpacity="0.15" />
+                  <path
+                    d={`M ${line.startX} ${line.startY} C ${line.startX + 50} ${line.startY}, ${line.endX - 50} ${line.endY}, ${line.endX} ${line.endY}`}
+                    fill="none" stroke="url(#correctGradient)" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx={line.startX} cy={line.startY} r="6" fill="#22c55e" />
+                  <circle cx={line.endX} cy={line.endY} r="6" fill="#22c55e" />
                 </g>
               ))}
             </svg>
 
             {/* Two Columns */}
             <div className="flex gap-16 justify-center pb-8">
-              {/* Left Column - Terms */}
+
+              {/* Left Column — Terms */}
               <div className="flex flex-col gap-3 w-64">
                 <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Terms</h3>
                 {shuffledLeft.map((pair) => {
-                  const isMatched = correctMatches.has(pair.id)
-                  const isIncorrect = incorrectAttempts.has(pair.id) && !isMatched
-                  const isSelected = selectedLeft === pair.id
+                  const isMatched = matchedPairIds.has(pair.id)
+                  const isSelected = selectedLeftId === pair.id
+                  const isWrongFlash = wrongFlashLeftId === pair.id
+
                   return (
-                    <div key={pair.id}
+                    <div
+                      key={`left-${pair.id}`}
                       ref={(el) => { if (el) leftItemRefs.current.set(pair.id, el) }}
                       onClick={() => handleLeftClick(pair)}
-                      className={`relative p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 font-body text-center
-                        ${isMatched ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default'
-                          : isSelected ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30'
-                          : isIncorrect ? 'bg-red-500/10 border-red-500/30 text-white hover:bg-red-500/20 animate-battle-wrong-shake'
-                          : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50'}`}>
-                      {isMatched && <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1"><CheckCircle size={14} className="text-white" /></div>}
-                      {isIncorrect && !isMatched && <div className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"><XCircle size={14} className="text-white" /></div>}
-                      <span className="font-semibold text-lg">{pair.left}</span>
+                      className={`relative p-4 rounded-xl transition-all duration-200 border-2 font-body text-center select-none
+                        ${isMatched
+                          ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default'
+                          : isSelected
+                            ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
+                            : isWrongFlash
+                              ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
+                              : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
+                        }`}
+                    >
+                      {isMatched && (
+                        <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
+                          <CheckCircle size={14} className="text-white" />
+                        </div>
+                      )}
+                      <span className="font-semibold text-base">{pair.left}</span>
                     </div>
                   )
                 })}
               </div>
 
-              {/* Right Column - Definitions */}
+              {/* Right Column — Definitions */}
               <div className="flex flex-col gap-3 w-72">
                 <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Definitions</h3>
                 {shuffledRight.map((pair) => {
-                  const isUsed = Array.from(matches.entries()).some(
-                    ([leftId, rightId]) => rightId === pair.id && correctMatches.has(leftId)
-                  )
-                  const isSelected = selectedRight === pair.id
+                  const isMatched = matchedPairIds.has(pair.id)
+                  const isSelected = selectedRightId === pair.id
+                  const isWrongFlash = wrongFlashRightId === pair.id
+
                   return (
-                    <div key={`right-${pair.id}`}
+                    <div
+                      key={`right-${pair.id}`}
                       ref={(el) => { if (el) rightItemRefs.current.set(pair.id, el) }}
                       onClick={() => handleRightClick(pair)}
-                      className={`relative p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 font-body text-center text-sm
-                        ${isUsed ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-60'
-                          : isSelected ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30'
-                          : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50'}`}>
-                      {isUsed && <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1"><CheckCircle size={14} className="text-white" /></div>}
+                      className={`relative p-4 rounded-xl transition-all duration-200 border-2 font-body text-center text-sm select-none
+                        ${isMatched
+                          ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-70'
+                          : isSelected
+                            ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
+                            : isWrongFlash
+                              ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
+                              : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
+                        }`}
+                    >
+                      {isMatched && (
+                        <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1">
+                          <CheckCircle size={14} className="text-white" />
+                        </div>
+                      )}
                       <span>{pair.right}</span>
                     </div>
                   )
                 })}
               </div>
+
             </div>
           </div>
         </div>
@@ -420,14 +472,19 @@ const MatchingQuiz = () => {
         <div className="flex-shrink-0 px-8 py-4 border-t border-white/5 bg-dark-900/50 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <p className="text-white/40 text-sm font-body">
-              {isComplete 
-                ? `Completed! ${correctMatches.size}/${quizData.pairs.length} pairs matched correctly`
+              {isComplete
+                ? `Completed! ${matchedPairIds.size}/${quizData.pairs.length} pairs matched correctly`
                 : battle.birdDefeated
                   ? 'Bird defeated! Submitting results...'
-                  : `Select a term, then select its matching definition`
+                  : selectedLeftId
+                    ? '✓ Term selected — now click a definition on the right'
+                    : selectedRightId
+                      ? '✓ Definition selected — now click a term on the left'
+                      : 'Select a term, then select its matching definition'
               }
             </p>
-            <button onClick={handleSubmit}
+            <button
+              onClick={handleSubmit}
               disabled={battle.birdDefeated}
               className="px-8 py-3 bg-gradient-to-r from-hive-purple to-hive-pink text-white rounded-xl 
                          font-semibold hover:shadow-lg hover:shadow-hive-purple/30 transition-all duration-300

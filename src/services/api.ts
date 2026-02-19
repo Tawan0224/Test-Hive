@@ -116,7 +116,7 @@ export const quizAPI = {
 // ── AI API ──
 export const aiAPI = {
   /**
-   * Generate a quiz from a PDF file using Gemini AI.
+   * Generate a quiz from a PDF file using AI (OpenRouter).
    * Uses FormData (multipart) so we bypass the JSON request helper.
    */
   generateFromPDF: async (params: {

@@ -10,7 +10,7 @@ import attemptRoutes from './src/routes/attempts.js';
 import aiRoutes from './src/routes/ai.js';
 
 dotenv.config();
-console.log('🔑 Gemini key loaded:', process.env.GEMINI_API_KEY ? 'YES ✅' : 'NO ❌');
+console.log('🔑 OpenRouter key loaded:', process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌');
 
 // Ensure temp upload directory exists
 const UPLOAD_DIR = '/tmp/testhive-uploads';
