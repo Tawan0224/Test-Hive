@@ -235,7 +235,7 @@ const QuizResultsPage = () => {
               Back to Home
             </button>
             <button
-              onClick={() => navigate('/ai-generate')}
+              onClick={() => navigate('/quiz/create')}
               className="flex items-center gap-2 px-8 py-4 bg-hive-purple text-white rounded-xl
                          hover:bg-hive-purple-light transition-all duration-300 font-body"
             >
