@@ -239,7 +239,7 @@ const MatchingQuiz = () => {
           totalQuestions: quizData.pairs.length,
           correctAnswers: matchedPairIds.size,
           score: accuracy,
-          answers: [],
+          answers: quizData.pairs.map((_, i) => matchedPairIds.has(String(i + 1)) ? 0 : null),
           quizData: {
             title: quizData.title,
             questions: quizData.pairs.map(p => ({
