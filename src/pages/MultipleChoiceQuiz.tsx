@@ -528,20 +528,20 @@ const MultipleChoiceQuiz = () => {
 
         {/* Answer Options */}
         <div className="flex-shrink-0 flex justify-center px-8 pb-8">
-          <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
-            {currentQuestion.options.map((option, index) => {
-              const style = getOptionStyle(index)
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleAnswerSelect(index)}
-                  disabled={isAnswerLocked || battle.birdDefeated}
-                  className={`relative py-5 px-6 rounded-xl text-2xl font-bold transition-all duration-300 
-                             transform hover:scale-[1.03] overflow-hidden group font-body
-                             text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
-                             disabled:hover:scale-100
-                             ${style.className}`}
+        <div className="w-full max-w-4xl grid grid-cols-2 gap-4">
+          {currentQuestion.options.map((option, index) => {
+            const style = getOptionStyle(index)
+            
+            return (
+              <button
+                key={index}
+                onClick={() => handleAnswerSelect(index)}
+                disabled={isAnswerLocked || battle.birdDefeated}
+                className={`relative min-h-[120px] py-8 px-8 rounded-2xl text-xl font-bold transition-all duration-300 
+                          transform hover:scale-[1.02] overflow-hidden group font-body
+                          text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
+                          disabled:hover:scale-100 flex items-center justify-center text-center
+                          ${style.className}`}
                   style={{
                     background: style.background,
                     border: style.border,

@@ -1,9 +1,9 @@
 import fs from 'fs';
 import Quiz from '../models/Quiz.js';
-import { generateQuizFromPDF } from '../services/geminiService.js';
+import { generateQuizFromPDF } from '../services/aiService.js';
 
 // ────────────────────────────────────────────
-// @desc    Generate a quiz from an uploaded PDF using Gemini AI
+// @desc    Generate a quiz from an uploaded PDF using AI
 // @route   POST /api/ai/generate
 // @access  Private
 // ────────────────────────────────────────────
@@ -37,7 +37,7 @@ export const generateQuiz = async (req, res) => {
       });
     }
 
-    // Call Gemini
+    // Call Ai
     const generated = await generateQuizFromPDF({
       filePath,
       quizType,
@@ -61,14 +61,14 @@ export const generateQuiz = async (req, res) => {
 
     if (quizType === 'multiple-choice') {
       if (!generated.questions || generated.questions.length === 0) {
-        throw new Error('Gemini did not return any questions.');
+        throw new Error('AI did not return any questions.');
       }
       quizData.questions = generated.questions;
       quizData.matchingQuestions = [];
       quizData.flashcards = [];
     } else if (quizType === 'flashcard') {
       if (!generated.cards || generated.cards.length === 0) {
-        throw new Error('Gemini did not return any flashcards.');
+        throw new Error('AI did not return any flashcards.');
       }
       quizData.flashcards = generated.cards.map((c) => ({
         front: c.front,
@@ -79,7 +79,7 @@ export const generateQuiz = async (req, res) => {
       quizData.matchingQuestions = [];
     } else if (quizType === 'matching') {
       if (!generated.pairs || generated.pairs.length === 0) {
-        throw new Error('Gemini did not return any matching pairs.');
+        throw new Error('AI did not return any matching pairs.');
       }
       quizData.matchingQuestions = [
         {
@@ -105,18 +105,18 @@ export const generateQuiz = async (req, res) => {
   } catch (error) {
     console.error('AI generation error:', error.message);
 
-    // Check for Gemini-specific errors
+    // Check for AI-specific errors
     if (error.message?.includes('API key')) {
       return res.status(500).json({
         success: false,
-        error: { code: 'GEMINI_AUTH', message: 'Invalid Gemini API key. Check your .env file.' },
+        error: { code: 'AI_AUTH', message: 'Invalid OpenRouter API key. Check your .env file.' },
       });
     }
 
     if (error.message?.includes('quota') || error.message?.includes('rate')) {
       return res.status(429).json({
         success: false,
-        error: { code: 'RATE_LIMIT', message: 'Gemini API rate limit reached. Please wait a moment and try again.' },
+        error: { code: 'RATE_LIMIT', message: 'AI rate limit reached. Please wait a moment and try again.' },
       });
     }
 
