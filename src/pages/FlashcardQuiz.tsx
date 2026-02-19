@@ -40,7 +40,7 @@ const sampleFlashcardData: FlashcardQuizData = {
 const FlashcardQuiz = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   // Get quiz data from navigation state or use sample data
   const quizData: FlashcardQuizData = location.state?.quizData || sampleFlashcardData
   const totalCards = quizData.cards.length
@@ -51,6 +51,7 @@ const FlashcardQuiz = () => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [viewedCards, setViewedCards] = useState<Set<number>>(new Set([0]))
   const [isAnimating, setIsAnimating] = useState(false)
+  const [isDeckComplete, setIsDeckComplete] = useState(false)
 
   const currentCard = quizData.cards[currentCardIndex]
 
@@ -86,6 +87,7 @@ const FlashcardQuiz = () => {
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (isDeckComplete) return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         handleFlip()
@@ -98,7 +100,7 @@ const FlashcardQuiz = () => {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [handleFlip, handlePrevious, handleNext])
+  }, [handleFlip, handlePrevious, handleNext, isDeckComplete])
 
   const handleFinishDeck = async () => {
     if (quizData._id) {
@@ -114,7 +116,7 @@ const FlashcardQuiz = () => {
         console.error('Failed to save attempt:', err)
       }
     }
-    navigate('/home')
+    setIsDeckComplete(true)
   }
 
 
@@ -123,6 +125,7 @@ const FlashcardQuiz = () => {
     setCurrentCardIndex(0)
     setIsFlipped(false)
     setViewedCards(new Set([0]))
+    setIsDeckComplete(false)
   }
 
   // Leave deck handlers
@@ -137,6 +140,74 @@ const FlashcardQuiz = () => {
   // Progress calculation
   const progressPercentage = ((currentCardIndex + 1) / totalCards) * 100
 
+  // ── DECK COMPLETE SCREEN ──────────────────────────────────────
+  if (isDeckComplete) {
+    return (
+      <div className="min-h-screen w-full relative overflow-hidden">
+        {/* Ambient background */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-8">
+          <div className="text-center max-w-md">
+            {/* Icon */}
+            <div className="text-7xl mb-6">🎉</div>
+
+            {/* Title */}
+            <h1 className="text-4xl font-bold text-white font-display mb-3">Deck Complete!</h1>
+            <p className="text-white/60 font-body mb-2 text-lg">{quizData.deckName}</p>
+            <p className="text-white/40 font-body mb-10 text-sm">
+              You reviewed all {totalCards} cards. Come back and study again to strengthen your memory!
+            </p>
+
+            {/* Stats */}
+            <div className="flex justify-center gap-6 mb-10">
+              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-8 py-5">
+                <p className="text-3xl font-bold text-white font-display">{totalCards}</p>
+                <p className="text-white/50 text-sm font-body mt-1">Total Cards</p>
+              </div>
+              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-8 py-5">
+                <p className="text-3xl font-bold text-hive-purple-light font-display">{viewedCards.size}</p>
+                <p className="text-white/50 text-sm font-body mt-1">Cards Seen</p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-4 justify-center flex-wrap">
+              <button
+                onClick={() => navigate('/home')}
+                className="flex items-center gap-2 px-8 py-4 bg-dark-500/80 text-white rounded-xl
+                           hover:bg-dark-500 transition-all duration-300 border border-white/10 font-body"
+              >
+                <Home size={18} />
+                Back to Home
+              </button>
+              <button
+                onClick={handleRestartDeck}
+                className="flex items-center gap-2 px-8 py-4 bg-dark-600/80 text-white rounded-xl
+                           hover:bg-dark-500 transition-all duration-300 border border-white/10 font-body"
+              >
+                <RotateCcw size={18} />
+                Study Again
+              </button>
+              <button
+                onClick={() => navigate('/quiz/create')}
+                className="flex items-center gap-2 px-8 py-4 bg-hive-purple text-white rounded-xl
+                           hover:bg-hive-purple-light transition-all duration-300 font-body"
+              >
+                Create New Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── NORMAL DECK VIEW ─────────────────────────────────────────
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Ambient background effects */}
@@ -151,8 +222,8 @@ const FlashcardQuiz = () => {
         {/* Header */}
         <nav className="flex-shrink-0 px-8 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <a 
-              href="/home" 
+            <a
+              href="/home"
               className="text-2xl font-display font-bold tracking-wider text-white
                          hover:text-hive-purple-light transition-colors duration-300 italic"
             >
@@ -195,9 +266,9 @@ const FlashcardQuiz = () => {
             </div>
             {/* Progress Bar */}
             <div className="h-2 bg-dark-600/50 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
-              <div 
+              <div
                 className="h-full rounded-full transition-all duration-500 ease-out relative"
-                style={{ 
+                style={{
                   width: `${progressPercentage}%`,
                   background: 'linear-gradient(90deg, #9333EA, #A855F7, #C084FC)'
                 }}
@@ -210,13 +281,13 @@ const FlashcardQuiz = () => {
 
         {/* Main Card Area */}
         <div className="flex-1 flex items-center justify-center px-8 py-8">
-          <div 
+          <div
             className="relative w-full max-w-2xl cursor-pointer"
             onClick={handleFlip}
             style={{ perspective: '1000px' }}
           >
             {/* Card Container with 3D flip */}
-            <div 
+            <div
               className="relative w-full"
               style={{
                 transformStyle: 'preserve-3d',
@@ -225,18 +296,18 @@ const FlashcardQuiz = () => {
               }}
             >
               {/* Front Side (Question) */}
-              <div 
+              <div
                 className="relative w-full"
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 {/* Card glow effect */}
                 <div className="absolute inset-0 bg-hive-purple/20 rounded-3xl blur-xl transform scale-105" />
-                
+
                 {/* Card content */}
                 <div className="relative bg-gradient-to-br from-dark-600/95 to-dark-700/95 backdrop-blur-md 
                                 border border-hive-purple/30 rounded-3xl p-10 shadow-2xl min-h-[320px]
                                 flex flex-col items-center justify-center">
-                  {/* Question Label */}
+                  {/* Question Label */}                
                   <div className="absolute top-4 left-6 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-hive-purple animate-pulse" />
                     <span className="text-hive-purple-light/80 text-xs font-medium uppercase tracking-wider font-body">
@@ -263,21 +334,21 @@ const FlashcardQuiz = () => {
               </div>
 
               {/* Back Side (Answer) */}
-              <div 
+              <div
                 className="absolute inset-0 w-full"
-                style={{ 
+                style={{
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)'
                 }}
               >
                 {/* Card glow effect - different color for answer */}
                 <div className="absolute inset-0 bg-hive-blue/20 rounded-3xl blur-xl transform scale-105" />
-                
+
                 {/* Card content */}
                 <div className="relative bg-gradient-to-br from-dark-600/95 to-dark-700/95 backdrop-blur-md 
                                 border border-hive-blue/30 rounded-3xl p-10 shadow-2xl min-h-[320px]
                                 flex flex-col items-center justify-center">
-                  {/* Answer Label */}
+                  {/* Answer Label */}                
                   <div className="absolute top-4 left-6 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-hive-blue animate-pulse" />
                     <span className="text-hive-blue/80 text-xs font-medium uppercase tracking-wider font-body">
@@ -312,14 +383,14 @@ const FlashcardQuiz = () => {
             onClick={handlePrevious}
             disabled={currentCardIndex === 0}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 font-body
-                       ${currentCardIndex === 0 
-                         ? 'bg-dark-600/30 text-white/30 cursor-not-allowed' 
+                       ${currentCardIndex === 0
+                         ? 'bg-dark-600/30 text-white/30 cursor-not-allowed'
                          : 'bg-dark-600/50 text-white/90 hover:bg-dark-500/50 border border-white/10 hover:border-hive-purple/30'}`}
           >
             <ChevronLeft size={20} />
             <span className="text-sm font-medium">Previous</span>
           </button>
-          
+
           {/* Restart Button */}
           <button
             onClick={handleRestartDeck}
@@ -334,8 +405,8 @@ const FlashcardQuiz = () => {
           <button
             onClick={currentCardIndex === totalCards - 1 ? handleFinishDeck : handleNext}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 font-body
-                       ${currentCardIndex === totalCards - 1 
-                         ? 'bg-gradient-to-r from-hive-purple to-hive-purple-light text-white shadow-lg shadow-hive-purple/25 hover:shadow-hive-purple/40' 
+                       ${currentCardIndex === totalCards - 1
+                         ? 'bg-gradient-to-r from-hive-purple to-hive-purple-light text-white shadow-lg shadow-hive-purple/25 hover:shadow-hive-purple/40'
                          : 'bg-dark-600/50 text-white/90 hover:bg-dark-500/50 border border-white/10 hover:border-hive-purple/30'}`}
           >
             <span className="text-sm font-medium">
@@ -352,10 +423,10 @@ const FlashcardQuiz = () => {
         {/* Keyboard shortcut hint */}
         <div className="flex-shrink-0 pb-6">
           <p className="text-center text-white/30 text-xs font-body">
-            Press <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">Space</kbd> 
-            to flip • 
+            Press <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">Space</kbd>
+            to flip •
             <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">←</kbd>
-            <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">→</kbd> 
+            <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">→</kbd>
             to navigate
           </p>
         </div>
@@ -366,15 +437,15 @@ const FlashcardQuiz = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="relative bg-gradient-to-br from-dark-600 to-dark-800 border border-hive-purple/30 
                           rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-hive-purple/20">
-            {/* Modal glow */}
+            {/* Modal glow */}               
             <div className="absolute inset-0 bg-hive-purple/5 rounded-2xl blur-xl" />
-            
+
             <div className="relative">
               <h3 className="text-2xl font-bold text-white mb-4 font-display">Leave Deck?</h3>
               <p className="text-white/70 mb-8 leading-relaxed font-body">
                 Are you sure you want to leave this flashcard deck? Your progress through the deck will not be saved.
               </p>
-              
+
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowLeaveConfirm(false)}

@@ -107,8 +107,14 @@ const MatchingQuiz = () => {
         return prev - 1
       })
     }, 1000)
-    return () => clearInterval(timer)
-  }, [isComplete, timeRemaining])
+      return () => clearInterval(timer)
+    }, [isComplete, timeRemaining])
+  // When timer hits 0, trigger results (only if not already ended by bird defeat or manual submit)
+  useEffect(() => {
+    if (timeRemaining === 0 && isComplete && !battle.birdDefeated) {
+      handleComplete()
+    }
+  }, [timeRemaining, isComplete])
 
   // Auto-complete when all pairs matched
   useEffect(() => {
