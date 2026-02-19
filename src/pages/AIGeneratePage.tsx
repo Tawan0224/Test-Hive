@@ -140,7 +140,9 @@ const AIGeneratePage = () => {
             quizData: {
               _id: quiz._id,
               title: generated.title,
-              pairs: generated.pairs,
+              pairs: generated.pairs.map((p: any, i: number) => ({
+                id: String(i + 1), left: p.left, right: p.right
+              })),
               timeLimit: generated.timeLimit || 120,
               points: generated.points || 10,
             },
