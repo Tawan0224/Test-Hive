@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useRouteFade } from '../components/layout/RouteFadeProvider'
 import { ChevronLeft, ChevronRight, RotateCcw, Home, Layers } from 'lucide-react'
 import { quizAPI } from '../services/api'
 
@@ -11,12 +12,11 @@ interface Flashcard {
   deckName: string
 }
 
-
 interface FlashcardQuizData {
   title: string
   cards: Flashcard[]
   deckName: string
-  _id?: string  // from database
+  _id?: string
 }
 
 // Sample flashcard data
@@ -40,7 +40,6 @@ const sampleFlashcardData: FlashcardQuizData = {
 const FlashcardQuiz = () => {
   const navigate = useNavigate()
   const location = useLocation()
-
   // Get quiz data from navigation state or use sample data
   const quizData: FlashcardQuizData = location.state?.quizData || sampleFlashcardData
   const totalCards = quizData.cards.length
@@ -118,7 +117,6 @@ const FlashcardQuiz = () => {
     }
     setIsDeckComplete(true)
   }
-
 
   // Handle restart deck
   const handleRestartDeck = () => {
@@ -300,7 +298,6 @@ const FlashcardQuiz = () => {
                 className="relative w-full"
                 style={{ backfaceVisibility: 'hidden' }}
               >
-                {/* Card glow effect */}
                 <div className="absolute inset-0 bg-hive-purple/20 rounded-3xl blur-xl transform scale-105" />
 
                 {/* Card content */}
@@ -314,13 +311,9 @@ const FlashcardQuiz = () => {
                       Question
                     </span>
                   </div>
-
-                  {/* Question Text */}
                   <p className="text-white text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-4">
                     {currentCard.front}
                   </p>
-
-                  {/* Click to reveal hint */}
                   <div className="absolute bottom-6 left-0 right-0 flex justify-center">
                     <div className="flex items-center gap-2 px-4 py-2 bg-hive-purple/20 rounded-full 
                                     border border-hive-purple/30 backdrop-blur-sm">
@@ -341,7 +334,6 @@ const FlashcardQuiz = () => {
                   transform: 'rotateY(180deg)'
                 }}
               >
-                {/* Card glow effect - different color for answer */}
                 <div className="absolute inset-0 bg-hive-blue/20 rounded-3xl blur-xl transform scale-105" />
 
                 {/* Card content */}
@@ -355,13 +347,9 @@ const FlashcardQuiz = () => {
                       Answer
                     </span>
                   </div>
-
-                  {/* Answer Text */}
                   <p className="text-white text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-4">
                     {currentCard.back}
                   </p>
-
-                  {/* Click to flip back hint */}
                   <div className="absolute bottom-6 left-0 right-0 flex justify-center">
                     <div className="flex items-center gap-2 px-4 py-2 bg-hive-blue/20 rounded-full 
                                     border border-hive-blue/30 backdrop-blur-sm">
@@ -445,7 +433,6 @@ const FlashcardQuiz = () => {
               <p className="text-white/70 mb-8 leading-relaxed font-body">
                 Are you sure you want to leave this flashcard deck? Your progress through the deck will not be saved.
               </p>
-
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowLeaveConfirm(false)}

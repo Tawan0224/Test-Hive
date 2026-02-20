@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useRouteFade } from '../components/layout/RouteFadeProvider'
 import { CheckCircle, XCircle, Clock, Target, Trophy, Home, RotateCcw } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 
@@ -19,6 +20,7 @@ interface QuizResults {
 const QuizResultsPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { fadeTo } = useRouteFade() 
   
   const results: QuizResults | null = location.state?.results
 
