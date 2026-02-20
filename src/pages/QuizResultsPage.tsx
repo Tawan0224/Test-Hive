@@ -20,8 +20,8 @@ interface QuizResults {
 const QuizResultsPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { fadeTo } = useRouteFade() 
-  
+  const { fadeTo } = useRouteFade()
+
   const results: QuizResults | null = location.state?.results
 
   // If no results, redirect to home
@@ -31,7 +31,7 @@ const QuizResultsPage = () => {
         <div className="text-center">
           <p className="text-white/60 text-lg mb-4 font-body">No quiz results found</p>
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => fadeTo('/home')}
             className="px-6 py-3 bg-hive-purple text-white rounded-xl hover:bg-hive-purple-light transition-colors font-body"
           >
             Go to Home
@@ -56,7 +56,7 @@ const QuizResultsPage = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      
+
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
@@ -66,7 +66,7 @@ const QuizResultsPage = () => {
       {/* Main Content */}
       <main className="relative z-10 pt-24 pb-12 px-8">
         <div className="max-w-4xl mx-auto">
-          
+
           {/* Results Header */}
           <div className="text-center mb-12">
             <div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full ${performance.bg} mb-6`}>
@@ -80,144 +80,117 @@ const QuizResultsPage = () => {
           {/* Score Card */}
           <div className="bg-dark-600/80 backdrop-blur-xl rounded-3xl border border-hive-purple/20 p-8 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              
+
               {/* Score Circle */}
               <div className="flex flex-col items-center justify-center">
-                <div className="relative w-40 h-40">
-                  {/* Background circle */}
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="70"
+                <div className="relative w-32 h-32 mb-4">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
-                      stroke="rgba(147, 51, 234, 0.2)"
-                      strokeWidth="12"
+                      stroke="rgba(139,92,246,0.2)"
+                      strokeWidth="3"
                     />
-                    {/* Progress circle */}
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="70"
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
-                      stroke="url(#scoreGradient)"
-                      strokeWidth="12"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(score / 100) * 440} 440`}
-                      className="transition-all duration-1000 ease-out"
+                      stroke="#8B5CF6"
+                      strokeWidth="3"
+                      strokeDasharray={`${score}, 100`}
                     />
-                    <defs>
-                      <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#9333EA" />
-                        <stop offset="100%" stopColor="#EC4899" />
-                      </linearGradient>
-                    </defs>
                   </svg>
-                  {/* Score text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold text-white font-display">{score}%</span>
-                    <span className="text-white/50 text-sm font-body">Score</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white font-display">{score}%</span>
                   </div>
                 </div>
+                <p className="text-white/60 text-sm font-body">Overall Score</p>
               </div>
 
               {/* Stats */}
-              <div className="md:col-span-2 grid grid-cols-2 gap-6">
-                {/* Correct Answers */}
-                <div className="bg-dark-500/50 rounded-2xl p-6 border border-green-500/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                    </div>
-                    <span className="text-white/60 text-sm font-body">Correct</span>
+              <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                <div className="bg-dark-500/50 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
-                  <p className="text-3xl font-bold text-white font-display">{correctAnswers}</p>
+                  <div>
+                    <p className="text-2xl font-bold text-white font-display">{correctAnswers}</p>
+                    <p className="text-white/50 text-sm font-body">Correct</p>
+                  </div>
                 </div>
-
-                {/* Wrong Answers */}
-                <div className="bg-dark-500/50 rounded-2xl p-6 border border-red-500/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-red-500/20 rounded-lg">
-                      <XCircle className="w-5 h-5 text-red-400" />
-                    </div>
-                    <span className="text-white/60 text-sm font-body">Incorrect</span>
+                <div className="bg-dark-500/50 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                    <XCircle className="w-5 h-5 text-red-400" />
                   </div>
-                  <p className="text-3xl font-bold text-white font-display">{totalQuestions - correctAnswers}</p>
+                  <div>
+                    <p className="text-2xl font-bold text-white font-display">{totalQuestions - correctAnswers}</p>
+                    <p className="text-white/50 text-sm font-body">Incorrect</p>
+                  </div>
                 </div>
-
-                {/* Total Questions */}
-                <div className="bg-dark-500/50 rounded-2xl p-6 border border-hive-blue/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-hive-blue/20 rounded-lg">
-                      <Target className="w-5 h-5 text-hive-blue" />
-                    </div>
-                    <span className="text-white/60 text-sm font-body">Total Questions</span>
+                <div className="bg-dark-500/50 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-blue-400" />
                   </div>
-                  <p className="text-3xl font-bold text-white font-display">{totalQuestions}</p>
+                  <div>
+                    <p className="text-2xl font-bold text-white font-display">{totalQuestions}</p>
+                    <p className="text-white/50 text-sm font-body">Total Questions</p>
+                  </div>
                 </div>
-
-                {/* Accuracy */}
-                <div className="bg-dark-500/50 rounded-2xl p-6 border border-hive-purple/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-hive-purple/20 rounded-lg">
-                      <Clock className="w-5 h-5 text-hive-purple-light" />
-                    </div>
-                    <span className="text-white/60 text-sm font-body">Accuracy</span>
+                <div className="bg-dark-500/50 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-hive-purple/20 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-hive-purple-light" />
                   </div>
-                  <p className="text-3xl font-bold text-white font-display">
-                    {Math.round((correctAnswers / totalQuestions) * 100)}%
-                  </p>
+                  <div>
+                    <p className="text-2xl font-bold text-white font-display">{score}%</p>
+                    <p className="text-white/50 text-sm font-body">Accuracy</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Question Review */}
-          <div className="bg-dark-600/80 backdrop-blur-xl rounded-3xl border border-hive-purple/20 p-8 mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 font-display">Question Review</h2>
-            
+          {/* Answer Review */}
+          <div className="bg-dark-600/80 backdrop-blur-xl rounded-3xl border border-white/5 p-8 mb-8">
+            <h2 className="text-xl font-bold text-white mb-6 font-display">Answer Review</h2>
             <div className="space-y-4">
               {quizData.questions.map((question, index) => {
                 const userAnswerIndex = answers[index]
                 const userAnswer = userAnswerIndex !== null ? question.options[userAnswerIndex] : null
-                const correctOption = question.options.find(opt => opt.isCorrect)
-                const isCorrect = userAnswer?.isCorrect || false
+                const correctOption = question.options.find(o => o.isCorrect)
+                const isCorrect = userAnswer?.isCorrect ?? false
 
                 return (
-                  <div 
+                  <div
                     key={index}
-                    className={`p-5 rounded-xl border ${
-                      isCorrect 
-                        ? 'bg-green-500/5 border-green-500/20' 
-                        : 'bg-red-500/5 border-red-500/20'
+                    className={`flex items-start gap-4 p-4 rounded-2xl border ${
+                      isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className={`p-1.5 rounded-full ${isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                        {isCorrect ? (
-                          <CheckCircle className="w-4 h-4 text-green-400" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white/90 font-medium mb-2">
-                          {index + 1}. {question.questionText}
-                        </p>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <span className="text-white/50">
-                            Your answer: {' '}
-                            <span className={userAnswer?.isCorrect ? 'text-green-400' : 'text-red-400'}>
-                              {userAnswer?.text || 'No answer'}
-                            </span>
+                    <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
+                      isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
+                    }`}>
+                      {isCorrect ? (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white/90 font-medium mb-2">
+                        {index + 1}. {question.questionText}
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <span className="text-white/50">
+                          Your answer:{' '}
+                          <span className={userAnswer?.isCorrect ? 'text-green-400' : 'text-red-400'}>
+                            {userAnswer?.text || 'No answer'}
                           </span>
-                          {!isCorrect && (
-                            <span className="text-white/50">
-                              Correct answer: {' '}
-                              <span className="text-green-400">{correctOption?.text}</span>
-                            </span>
-                          )}
-                        </div>
+                        </span>
+                        {!isCorrect && (
+                          <span className="text-white/50">
+                            Correct answer:{' '}
+                            <span className="text-green-400">{correctOption?.text}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -229,7 +202,7 @@ const QuizResultsPage = () => {
           {/* Action Buttons */}
           <div className="flex justify-center gap-4">
             <button
-              onClick={() => navigate('/home')}
+              onClick={() => fadeTo('/home')}
               className="flex items-center gap-2 px-8 py-4 bg-dark-500/80 text-white rounded-xl
                          hover:bg-dark-500 transition-all duration-300 border border-white/10 font-body"
             >
@@ -237,7 +210,7 @@ const QuizResultsPage = () => {
               Back to Home
             </button>
             <button
-              onClick={() => navigate('/quiz/create')}
+              onClick={() => fadeTo('/quiz/create')}
               className="flex items-center gap-2 px-8 py-4 bg-hive-purple text-white rounded-xl
                          hover:bg-hive-purple-light transition-all duration-300 font-body"
             >
@@ -245,6 +218,7 @@ const QuizResultsPage = () => {
               Create New Quiz
             </button>
           </div>
+
         </div>
       </main>
     </div>

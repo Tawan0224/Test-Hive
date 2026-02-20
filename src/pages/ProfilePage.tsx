@@ -36,6 +36,7 @@ const sampleAchievements = [
   },
 ]
 
+const HISTORY_PREVIEW_COUNT = 5
 
 const ProfilePage = () => {
   const navigate = useNavigate()
@@ -43,8 +44,8 @@ const ProfilePage = () => {
   const [achievements] = useState(sampleAchievements)
   const [testHistory, setTestHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [showAllHistory, setShowAllHistory] = useState(false)
 
-  // Redirect to login only AFTER loading is complete and user is not authenticated
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -68,6 +69,11 @@ const ProfilePage = () => {
     navigate('/profile/edit')
   }
 
+  // Slice history based on showAllHistory toggle
+  const displayedHistory = showAllHistory
+    ? testHistory
+    : testHistory.slice(0, HISTORY_PREVIEW_COUNT)
+
   // Get quiz type icon
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -86,11 +92,15 @@ const ProfilePage = () => {
       case 'flashcard':
         return (
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2h-2" />
           </svg>
         )
       default:
-        return null
+        return (
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M7 7h10" />
+          </svg>
+        )
     }
   }
 
@@ -126,9 +136,11 @@ const ProfilePage = () => {
       <main className="relative z-10 pt-24 px-6 pb-12">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Left Sidebar - User Info */}
+
+            {/* ── Left Sidebar ── */}
             <div className="md:w-72 flex-shrink-0">
               <div className="sticky top-28">
+
                 {/* Profile Picture */}
                 <div className="mb-4">
                   <div className="w-[296px] h-[296px] rounded-full overflow-hidden border border-[#30363d]">
@@ -209,8 +221,9 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Main Content Area */}
+            {/* ── Main Content Area ── */}
             <div className="flex-1 min-w-0">
+
               {/* Achievements Section */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#21262d]">
@@ -238,13 +251,22 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Test History Section */}
+              {/* ── Recent Activity Section ── */}
               <div>
-                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#21262d]">
-                  <svg className="w-5 h-5 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h2 className="text-base font-semibold text-[#c9d1d9]">Recent Activity</h2>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#21262d]">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 className="text-base font-semibold text-[#c9d1d9]">Recent Activity</h2>
+                  </div>
+
+                  {/* Count badge */}
+                  {!historyLoading && testHistory.length > 0 && (
+                    <span className="text-xs text-[#7d8590] bg-[#21262d] px-2 py-0.5 rounded-full">
+                      {showAllHistory ? testHistory.length : Math.min(HISTORY_PREVIEW_COUNT, testHistory.length)} / {testHistory.length}
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -257,7 +279,7 @@ const ProfilePage = () => {
                       <p className="text-[#7d8590] text-sm">No quizzes taken yet. Start your first quiz!</p>
                     </div>
                   ) : (
-                    testHistory.map((test: any) => (
+                    displayedHistory.map((test: any) => (
                       <div
                         key={test._id}
                         onClick={() => console.log('View test:', test._id)}
@@ -294,13 +316,21 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* View All Link */}
-                <div className="mt-4 text-center">
-                  <button className="text-sm text-[#58a6ff] hover:underline">
-                    View all activity →
-                  </button>
-                </div>
+                {/* Show More / Show Less button — only visible if more than HISTORY_PREVIEW_COUNT entries */}
+                {!historyLoading && testHistory.length > HISTORY_PREVIEW_COUNT && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setShowAllHistory(prev => !prev)}
+                      className="text-sm text-[#58a6ff] hover:underline transition-colors duration-200"
+                    >
+                      {showAllHistory
+                        ? `Show less ↑`
+                        : `View all ${testHistory.length} activities →`}
+                    </button>
+                  </div>
+                )}
               </div>
+
             </div>
           </div>
         </div>
