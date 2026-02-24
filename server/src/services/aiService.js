@@ -35,8 +35,12 @@ RULES:
 - Each question must have exactly 4 options
 - Exactly 1 option must be correct
 - Questions must be clear and unambiguous
+- Focus on key concepts, definitions, facts, and ideas from the ACTUAL CONTENT — NOT on document structure (chapter numbers, headings, page numbers, or the document title)
+- NEVER create questions about figures, images, diagrams, charts, tables, or graphs — these are not visible to the quiz taker. Only ask about information stated in the text itself
 - Cover a range of topics from the document
 - Vary difficulty (mix easy, medium, hard)
+- CRITICAL FORMATTING RULE: Every option must be between 3-12 words. Write the correct answer FIRST, then write 3 wrong answers that are the SAME length (± 2 words). If the correct answer is 6 words, all wrong answers must also be 5-8 words. NEVER let the correct answer be noticeably longer than the others
+- Randomize where the correct answer appears (not always the same position)
 
 Respond with ONLY valid JSON, no markdown, no explanation:
 {
@@ -65,9 +69,11 @@ function buildFlashcardPrompt(text, count, customInstructions) {
   return `You are an expert study material creator. Based on the following document content, generate exactly ${count} flashcards.${extra}
 
 RULES:
-- Front: a clear term, concept, or question
+- Front: a clear term, concept, or question drawn from the ACTUAL CONTENT
 - Back: a concise but complete answer or definition
-- Cover key concepts from the document
+- IMPORTANT: Focus on key concepts, definitions, facts, and ideas — NOT on document structure like chapter titles, section headings, page numbers, or the document's own title
+- NEVER reference figures, images, diagrams, charts, tables, or graphs — these are not visible to the quiz taker
+- Cover important and testable concepts from the document
 - Keep fronts short (under 15 words)
 - Keep backs informative but concise (under 50 words)
 - Group related cards under the same deckName
@@ -94,11 +100,14 @@ function buildMatchingPrompt(text, count, customInstructions) {
   return `You are an expert quiz creator. Based on the following document content, generate exactly ${count} matching pairs.${extra}
 
 RULES:
-- Left side: short terms, names, or concepts (under 10 words)
-- Right side: definitions, descriptions, or values (under 20 words)
-- All pairs must be from the document content
+- Left side: key terms, concepts, names, or vocabulary from the ACTUAL CONTENT (under 10 words)
+- Right side: their corresponding definitions, descriptions, or explanations (under 20 words)
+- IMPORTANT: Focus on substantive concepts, facts, and terminology from the document — NOT on document structure like chapter titles, section headings, page numbers, or the document's own title
+- NEVER reference figures, images, diagrams, charts, tables, or graphs — these are not visible to the quiz taker
+- Each pair should test knowledge of the material (e.g., term → definition, cause → effect, concept → example)
 - Left and right sides must be clearly distinct
 - No duplicate terms
+- Pairs should be challenging — avoid trivially obvious matches
 
 Respond with ONLY valid JSON, no markdown, no explanation:
 {
@@ -141,12 +150,11 @@ export async function generateQuizFromPDF({ filePath, quizType, count, customIns
 
   // Step 3: Send to OpenRouter — try multiple free models as fallback
   const FREE_MODELS = [
-    'openrouter/free',                                    // Auto-picks any available free model
-    'google/gemini-2.5-flash-image-preview:free',         // Google Gemini 2.5
-    'google/gemma-3-27b-it:free',                         // Google Gemma 3
+    'google/gemma-3-27b-it:free',                         // Google Gemma 3 — most reliable
     'deepseek/deepseek-r1-0528:free',                     // DeepSeek R1
-    'meta-llama/llama-3.2-11b-vision-instruct:free',      // Meta Llama 3.2
     'mistralai/mistral-small-3.1-24b-instruct:free',      // Mistral Small
+    'meta-llama/llama-3.2-11b-vision-instruct:free',      // Meta Llama 3.2
+    'openrouter/free',                                    // Unlimited tokens but slow/unreliable — last resort
   ];
 
   let rawText = null;

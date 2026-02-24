@@ -253,7 +253,9 @@ const MatchingQuiz = () => {
               options: [{ text: p.right, isCorrect: true }]
             }))
           }
-        }
+        },
+        originalQuizData: quizData,
+        quizType: 'matching',
       }
     })
   }, [matchedPairIds.size, navigate, quizData, timeRemaining])

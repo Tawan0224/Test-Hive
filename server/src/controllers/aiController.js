@@ -63,14 +63,22 @@ export const generateQuiz = async (req, res) => {
       if (!generated.questions || generated.questions.length === 0) {
         throw new Error('AI did not return any questions.');
       }
-      quizData.questions = generated.questions;
+      // Sanitize: ensure every option has isCorrect (free models sometimes omit false values)
+      // Also trim to requested count (free models sometimes return extra)
+      quizData.questions = generated.questions.slice(0, questionCount).map((q) => ({
+        ...q,
+        options: (q.options || []).map((opt) => ({
+          text: opt.text,
+          isCorrect: opt.isCorrect === true,
+        })),
+      }));
       quizData.matchingQuestions = [];
       quizData.flashcards = [];
     } else if (quizType === 'flashcard') {
       if (!generated.cards || generated.cards.length === 0) {
         throw new Error('AI did not return any flashcards.');
       }
-      quizData.flashcards = generated.cards.map((c) => ({
+      quizData.flashcards = generated.cards.slice(0, questionCount).map((c) => ({
         front: c.front,
         back: c.back,
         deckName: c.deckName || generated.deckName || '',
@@ -83,7 +91,7 @@ export const generateQuiz = async (req, res) => {
       }
       quizData.matchingQuestions = [
         {
-          pairs: generated.pairs,
+          pairs: generated.pairs.slice(0, questionCount),
           timeLimit: generated.timeLimit || 120,
           points: generated.points || 10,
         },

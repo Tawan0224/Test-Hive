@@ -86,10 +86,11 @@ const ProfilePage = () => {
       } else if (test.quizType === 'flashcard') {
         originalQuizData = { _id: quiz._id, title: quiz.title, cards: quiz.flashcards, deckName: quiz.title }
       } else if (test.quizType === 'matching') {
+        const matchingSet = quiz.matchingQuestions?.[0]
         originalQuizData = {
           _id: quiz._id, title: quiz.title,
-          pairs: quiz.matchingQuestions?.map((p: any, i: number) => ({ id: String(i + 1), left: p.left, right: p.right })),
-          timeLimit: quiz.timeLimit || 120, points: quiz.points || 10,
+          pairs: matchingSet?.pairs?.map((p: any, i: number) => ({ id: String(i + 1), left: p.left, right: p.right })) || [],
+          timeLimit: matchingSet?.timeLimit || 120, points: matchingSet?.points || 10,
         }
       }
 
