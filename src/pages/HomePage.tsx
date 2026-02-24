@@ -4,6 +4,7 @@ import Button from "../components/ui/Button";
 import TreasureChest from "../components/three/TreasureChest";
 import { useNavigate } from 'react-router-dom'
 import { quizAPI } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 // Team members data
 const teamMembers = [
@@ -53,6 +54,7 @@ const features = [
 const HomePage = () => {
   const { fadeTo } = useRouteFade();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const aboutRef = useRef<HTMLElement>(null);
   const joinRef = useRef<HTMLElement>(null); 
   const featuresRef = useRef<HTMLDivElement>(null);
@@ -229,9 +231,9 @@ const HomePage = () => {
               </a>
 
               {/* Logout Link */}
-              <a href="/login" className="nav-link hover:text-red-400">
+              <button onClick={() => { logout(); navigate('/login'); }} className="nav-link hover:text-red-400">
                 Logout
-              </a>
+              </button>
             </div>
           </div>
         </nav>
