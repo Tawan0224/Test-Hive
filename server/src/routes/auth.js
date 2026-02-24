@@ -1,6 +1,6 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { signup, login, getMe, updateProfile, googleAuth, facebookAuth } from '../controllers/authController.js';
+import { signup, login, getMe, updateProfile, googleAuth, microsoftAuth, facebookAuth } from '../controllers/authController.js';
 import { signupValidation, loginValidation } from '../middleware/validate.js';
 import { protect } from '../middleware/auth.js';
 
@@ -21,6 +21,7 @@ const authLimiter = rateLimit({
 router.post('/signup', authLimiter, signupValidation, signup);
 router.post('/login', authLimiter, loginValidation, login);
 router.post('/google', authLimiter, googleAuth);
+router.post('/microsoft', authLimiter, microsoftAuth);
 router.post('/facebook', authLimiter, facebookAuth);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);

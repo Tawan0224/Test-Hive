@@ -72,6 +72,12 @@ export const authAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  microsoftAuth: (data: { email: string; microsoftId: string; displayName: string; profilePicture: string }) =>
+    request('/auth/microsoft', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ── Quiz API ──

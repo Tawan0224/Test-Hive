@@ -426,7 +426,7 @@ const MultipleChoiceQuiz = () => {
         />
       </div>
       {/* ─── LEFT MASCOT: BIRD (Player) ─── */}
-      <div className="absolute -left-40 sm:-left-28 lg:-left-10 -bottom-24 sm:-bottom-8 lg:bottom-2 w-[440px] h-[500px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
+      <div className="absolute -left-36 sm:-left-28 lg:-left-10 -bottom-28 sm:-bottom-8 lg:bottom-2 w-[360px] h-[430px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
@@ -441,7 +441,7 @@ const MultipleChoiceQuiz = () => {
         />
       </div>
       {/* ─── RIGHT MASCOT: OCTOPUS (Enemy) ─── */}
-      <div className="absolute -right-36 sm:-right-24 lg:-right-12 -bottom-24 sm:-bottom-16 lg:-bottom-20 w-[420px] h-[490px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
+      <div className="absolute -right-34 sm:-right-24 lg:-right-12 -bottom-28 sm:-bottom-16 lg:-bottom-20 w-[350px] h-[420px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
 
@@ -552,7 +552,7 @@ const MultipleChoiceQuiz = () => {
         <div className="flex-1" />
 
         {/* Navigation Buttons */}
-        <div className="flex-shrink-0 flex items-center justify-center gap-3 sm:gap-6 py-3 sm:py-4 px-4">
+        <div className="flex-shrink-0 flex items-center justify-center gap-3 sm:gap-6 py-2 sm:py-4 px-4">
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0 || isAnswerLocked || battle.birdDefeated}
@@ -580,8 +580,8 @@ const MultipleChoiceQuiz = () => {
         </div>
 
         {/* Answer Options */}
-        <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 pb-6 sm:pb-8">
-        <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 pb-20 sm:pb-8">
+        <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
           {currentOptions.map((option, index) => {
             const style = getOptionStyle(index)
             
@@ -590,7 +590,7 @@ const MultipleChoiceQuiz = () => {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isAnswerLocked || battle.birdDefeated || selectedAnswers[currentQuestionIndex] !== null}
-                className={`relative min-h-[92px] sm:min-h-[120px] py-5 sm:py-8 px-4 sm:px-8 rounded-2xl text-base sm:text-xl font-bold transition-all duration-300 
+                className={`relative min-h-[68px] sm:min-h-[120px] py-3 sm:py-8 px-3 sm:px-8 rounded-2xl text-sm sm:text-xl font-bold transition-all duration-300 
                           transform hover:scale-[1.02] overflow-hidden group font-body
                           text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
                           disabled:hover:scale-100 flex items-center justify-center text-center

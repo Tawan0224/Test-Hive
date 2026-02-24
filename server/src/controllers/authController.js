@@ -282,33 +282,33 @@ export const googleAuth = async (req, res) => {
     let user = await User.findOne({ authProviderId: googleId, authProvider: 'google' });
 
     if (!user) {
-      const existingEmail = await User.findOne({ email, authProvider: 'email' });
+      const existingEmail = await User.findOne({ email });
       if (existingEmail) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'EMAIL_EXISTS',
-            message: 'An account with this email already exists. Please log in with your password.',
-          },
+        // Link account: update to Google provider and log them in
+        user = existingEmail;
+        user.authProvider = 'google';
+        user.authProviderId = googleId;
+        if (profilePicture) user.profilePicture = profilePicture;
+        user.lastLogin = new Date();
+        await user.save();
+      } else {
+        const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+        let username = baseUsername;
+        let counter = 1;
+        while (await User.findOne({ username })) {
+          username = `${baseUsername}${counter}`;
+          counter++;
+        }
+
+        user = await User.create({
+          email,
+          username,
+          displayName,
+          profilePicture,
+          authProvider: 'google',
+          authProviderId: googleId,
         });
       }
-
-      const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
-      let username = baseUsername;
-      let counter = 1;
-      while (await User.findOne({ username })) {
-        username = `${baseUsername}${counter}`;
-        counter++;
-      }
-
-      user = await User.create({
-        email,
-        username,
-        displayName,
-        profilePicture,
-        authProvider: 'google',
-        authProviderId: googleId,
-      });
     } else {
       user.lastLogin = new Date();
       await user.save();
@@ -330,6 +330,68 @@ export const googleAuth = async (req, res) => {
       error: {
         code: 'OAUTH_FAILED',
         message: 'Google authentication failed',
+      },
+    });
+  }
+};
+
+// @desc    Handle Microsoft OAuth callback
+// @route   POST /api/auth/microsoft
+// @access  Public
+export const microsoftAuth = async (req, res) => {
+  try {
+    const { email, microsoftId, displayName, profilePicture } = req.body;
+
+    let user = await User.findOne({ authProviderId: microsoftId, authProvider: 'microsoft' });
+
+    if (!user) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        // Link account: update to Microsoft provider and log them in
+        user = existingEmail;
+        user.authProvider = 'microsoft';
+        user.authProviderId = microsoftId;
+        user.lastLogin = new Date();
+        await user.save();
+      } else {
+        const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+        let username = baseUsername;
+        let counter = 1;
+        while (await User.findOne({ username })) {
+          username = `${baseUsername}${counter}`;
+          counter++;
+        }
+
+        user = await User.create({
+          email,
+          username,
+          displayName,
+          profilePicture,
+          authProvider: 'microsoft',
+          authProviderId: microsoftId,
+        });
+      }
+    } else {
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      data: {
+        user: user.toJSON(),
+        token,
+      },
+    });
+  } catch (error) {
+    console.error('Microsoft auth error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'OAUTH_FAILED',
+        message: 'Microsoft authentication failed',
       },
     });
   }

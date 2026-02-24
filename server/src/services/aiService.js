@@ -150,11 +150,11 @@ export async function generateQuizFromPDF({ filePath, quizType, count, customIns
 
   // Step 3: Send to OpenRouter — try multiple free models as fallback
   const FREE_MODELS = [
-    'google/gemma-3-27b-it:free',                         // Google Gemma 3 — most reliable
+    'openrouter/free',                                    // First choice per request
+    'google/gemma-3-27b-it:free',                         // Google Gemma 3 — reliable fallback
     'deepseek/deepseek-r1-0528:free',                     // DeepSeek R1
     'mistralai/mistral-small-3.1-24b-instruct:free',      // Mistral Small
     'meta-llama/llama-3.2-11b-vision-instruct:free',      // Meta Llama 3.2
-    'openrouter/free',                                    // Unlimited tokens but slow/unreliable — last resort
   ];
 
   let rawText = null;

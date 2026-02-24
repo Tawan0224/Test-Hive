@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI } from '../services/api';
+import { useMsal } from '@azure/msal-react';
+import { loginRequest } from '../config/msalConfig';
 
 interface User {
   _id: string;
@@ -29,6 +31,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
+  googleAuth: (accessToken: string) => Promise<{ success: boolean; error?: string }>;
+  microsoftLogin: () => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateUser: (userData: User) => void;
 }
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('testhive_token'));
   const [isLoading, setIsLoading] = useState(true);
+  const { instance: msalInstance } = useMsal();
 
   // On mount, check if we have a saved token and fetch user data
   useEffect(() => {
@@ -95,6 +100,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const googleAuth = async (accessToken: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const profile = await res.json();
+
+      const response = await authAPI.googleAuth({
+        email: profile.email,
+        googleId: profile.sub,
+        displayName: profile.name,
+        profilePicture: profile.picture || '',
+      });
+
+      if (response.success && response.data) {
+        const { user: u, token: t } = response.data as any;
+        localStorage.setItem('testhive_token', t);
+        setUser(u);
+        setToken(t);
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || 'Google login failed',
+      };
+    } catch (err) {
+      console.error('Google login error:', err);
+      return { success: false, error: 'Google login failed' };
+    }
+  };
+
+  const microsoftLogin = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const loginResponse = await msalInstance.loginPopup(loginRequest);
+      const account = loginResponse.account;
+
+      if (!account) {
+        return { success: false, error: 'Microsoft login failed - no account returned' };
+      }
+
+      const response = await authAPI.microsoftAuth({
+        email: account.username,
+        microsoftId: account.localAccountId,
+        displayName: account.name || account.username.split('@')[0],
+        profilePicture: '',
+      });
+
+      if (response.success && response.data) {
+        const { user: u, token: t } = response.data as any;
+        localStorage.setItem('testhive_token', t);
+        setUser(u);
+        setToken(t);
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || 'Microsoft login failed',
+      };
+    } catch (err: any) {
+      console.error('Microsoft login error:', err);
+      return {
+        success: false,
+        error: err?.errorMessage || 'Microsoft login failed',
+      };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('testhive_token');
     setUser(null);
@@ -114,6 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         signup,
+        googleAuth,
+        microsoftLogin,
         logout,
         updateUser,
       }}

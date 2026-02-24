@@ -287,7 +287,7 @@ const MatchingQuiz = () => {
           name="Bird" side="left" isHit={battle.isBirdHit} />
       </div>
       {/* ─── BIRD MASCOT ─── */}
-      <div className="absolute -left-40 sm:-left-36 lg:-left-32 -bottom-24 sm:-bottom-8 lg:bottom-2 w-[440px] h-[500px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
+      <div className="absolute -left-36 sm:-left-36 lg:-left-32 -bottom-28 sm:-bottom-8 lg:bottom-2 w-[360px] h-[430px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
@@ -297,7 +297,7 @@ const MatchingQuiz = () => {
           name="Octopus" side="right" isHit={battle.isOctopusHit} />
       </div>
       {/* ─── OCTOPUS MASCOT ─── */}
-      <div className="absolute -right-40 sm:-right-40 lg:-right-36 -bottom-24 sm:-bottom-16 lg:-bottom-20 w-[420px] h-[490px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
+      <div className="absolute -right-34 sm:-right-40 lg:-right-36 -bottom-28 sm:-bottom-16 lg:-bottom-20 w-[350px] h-[420px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
 
@@ -402,7 +402,7 @@ const MatchingQuiz = () => {
             </svg>
 
             {/* Two Columns */}
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 justify-center pb-8">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-16 justify-center pb-20 sm:pb-8">
 
               {/* Left Column — Terms */}
               <div className="flex flex-col gap-3 w-full lg:w-64">
@@ -417,7 +417,7 @@ const MatchingQuiz = () => {
                       key={`left-${pair.id}`}
                       ref={(el) => { if (el) leftItemRefs.current.set(pair.id, el) }}
                       onClick={() => handleLeftClick(pair)}
-                      className={`relative p-4 rounded-xl transition-all duration-200 border-2 font-body text-center select-none
+                      className={`relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center select-none
                         ${isMatched
                           ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default'
                           : isSelected
@@ -432,7 +432,7 @@ const MatchingQuiz = () => {
                           <CheckCircle size={14} className="text-white" />
                         </div>
                       )}
-                      <span className="font-semibold text-base">{pair.left}</span>
+                      <span className="font-semibold text-sm sm:text-base">{pair.left}</span>
                     </div>
                   )
                 })}
@@ -451,7 +451,7 @@ const MatchingQuiz = () => {
                       key={`right-${pair.id}`}
                       ref={(el) => { if (el) rightItemRefs.current.set(pair.id, el) }}
                       onClick={() => handleRightClick(pair)}
-                      className={`relative p-4 rounded-xl transition-all duration-200 border-2 font-body text-center text-sm select-none
+                      className={`relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center text-xs sm:text-sm select-none
                         ${isMatched
                           ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-70'
                           : isSelected
