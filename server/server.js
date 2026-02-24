@@ -8,6 +8,7 @@ import authRoutes from './src/routes/auth.js';
 import quizRoutes from './src/routes/quiz.js';
 import attemptRoutes from './src/routes/attempts.js';
 import aiRoutes from './src/routes/ai.js';
+import achievementRoutes from './src/routes/achievements.js';
 
 dotenv.config();
 console.log('🔑 OpenRouter key loaded:', process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌');
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/attempts', attemptRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/achievements', achievementRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,7 @@
 import Quiz from '../models/Quiz.js';
 import QuizAttempt from '../models/QuizAttempt.js';
 import User from '../models/User.js';
+import Achievement from '../models/Achievement.js';
 
 // ────────────────────────────────────────────
 // @desc    Create a new quiz
@@ -255,6 +256,7 @@ export const submitQuizAttempt = async (req, res) => {
     await quiz.save();
 
     // Update user stats
+    let newlyUnlocked = [];
     const user = await User.findById(req.user._id);
     if (user) {
       user.stats.quizzesCompleted = (user.stats.quizzesCompleted || 0) + 1;
@@ -291,6 +293,34 @@ export const submitQuizAttempt = async (req, res) => {
 
       user.stats.lastQuizDate = now;
       await user.save();
+
+      // Check for new achievements
+      const allAchievements = await Achievement.find();
+      const unlockedIds = new Set(user.achievements.map(a => a.achievementId.toString()));
+      newlyUnlocked = [];
+
+      for (const achievement of allAchievements) {
+        if (unlockedIds.has(achievement._id.toString())) continue;
+
+        let earned = false;
+        if (achievement.type === 'quizzes_completed') {
+          earned = user.stats.quizzesCompleted >= achievement.requirement;
+        } else if (achievement.type === 'score_percentage') {
+          earned = accuracy >= achievement.requirement;
+        } else if (achievement.type === 'streak') {
+          earned = user.stats.currentStreak >= achievement.requirement;
+        }
+
+        if (earned) {
+          user.achievements.push({ achievementId: achievement._id, unlockedAt: new Date() });
+          newlyUnlocked.push(achievement);
+        }
+      }
+
+      if (newlyUnlocked.length > 0) {
+        await user.save();
+        console.log(`🏅 ${newlyUnlocked.length} new achievement(s) unlocked:`, newlyUnlocked.map(a => a.name).join(', '));
+      }
     }
 
     res.status(201).json({
@@ -298,6 +328,7 @@ export const submitQuizAttempt = async (req, res) => {
       data: {
         attempt,
         updatedStats: user?.stats,
+        newAchievements: newlyUnlocked || [],
       },
     });
   } catch (error) {

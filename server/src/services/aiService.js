@@ -148,64 +148,110 @@ export async function generateQuizFromPDF({ filePath, quizType, count, customIns
   else if (quizType === 'matching') prompt = buildMatchingPrompt(trimmedText, count, customInstructions);
   else throw new Error(`Unknown quiz type: ${quizType}`);
 
-  // Step 3: Send to OpenRouter — try multiple free models as fallback
-  const FREE_MODELS = [
-    'openrouter/free',                                    // First choice per request
-    'google/gemma-3-27b-it:free',                         // Google Gemma 3 — reliable fallback
-    'deepseek/deepseek-r1-0528:free',                     // DeepSeek R1
-    'mistralai/mistral-small-3.1-24b-instruct:free',      // Mistral Small
-    'meta-llama/llama-3.2-11b-vision-instruct:free',      // Meta Llama 3.2
-  ];
-
+  // Step 3: Try Claude (Anthropic) first, then fall back to OpenRouter free models
   let rawText = null;
   let lastError = null;
 
-  for (const model of FREE_MODELS) {
+  // --- Try Claude first ---
+  if (process.env.ANTHROPIC_API_KEY) {
+    // Pick model based on complexity:
+    // - Haiku: flashcards or small quizzes (≤5 items) — fast & cheap
+    // - Sonnet: default for most quizzes — good balance
+    // - Opus: large quizzes (>15 items) with custom instructions — highest quality
+    let claudeModel = 'claude-sonnet-4-20250514';
+    if (quizType === 'flashcard' || count <= 5) {
+      claudeModel = 'claude-haiku-4-5-20251001';
+    } else if (count > 15 && customInstructions) {
+      claudeModel = 'claude-opus-4-20250514';
+    }
+
     try {
-      console.log(`🤖 Trying model: ${model}`);
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      console.log(`🤖 Trying Claude (${claudeModel})...`);
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:5001',
-          'X-Title': 'TestHive',
         },
         body: JSON.stringify({
-          model,
+          model: claudeModel,
+          max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }],
         }),
       });
 
-      if (response.status === 401) {
-        throw new Error('API key');
-      }
-
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        rawText = data.content?.[0]?.text;
+        if (rawText) console.log('✅ Success with Claude');
+      } else {
         const errorData = await response.json().catch(() => ({}));
-        console.warn(`Model ${model} failed:`, errorData?.error?.message || response.status);
+        console.warn('Claude failed:', errorData?.error?.message || response.status);
         lastError = errorData?.error?.message || `HTTP ${response.status}`;
-        continue; // try next model
-      }
-
-      const data = await response.json();
-
-      // OpenRouter sometimes returns 200 OK but with an error object inside
-      if (data.error) {
-        console.warn(`Model ${model} returned error in body:`, data.error?.message || data.error);
-        lastError = data.error?.message || 'Provider error';
-        continue; // try next model
-      }
-
-      rawText = data.choices?.[0]?.message?.content;
-      if (rawText) {
-        console.log(`✅ Success with model: ${model}`);
-        break;
       }
     } catch (err) {
-      if (err.message === 'API key') throw err;
-      console.warn(`Model ${model} threw error:`, err.message);
+      console.warn('Claude threw error:', err.message);
       lastError = err.message;
+    }
+  }
+
+  // --- Fall back to OpenRouter free models ---
+  if (!rawText) {
+    const FREE_MODELS = [
+      'openrouter/free',
+      'google/gemma-3-27b-it:free',
+      'deepseek/deepseek-r1-0528:free',
+      'mistralai/mistral-small-3.1-24b-instruct:free',
+      'meta-llama/llama-3.2-11b-vision-instruct:free',
+    ];
+
+    for (const model of FREE_MODELS) {
+      try {
+        console.log(`🤖 Trying model: ${model}`);
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:5001',
+            'X-Title': 'TestHive',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+
+        if (response.status === 401) {
+          throw new Error('API key');
+        }
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.warn(`Model ${model} failed:`, errorData?.error?.message || response.status);
+          lastError = errorData?.error?.message || `HTTP ${response.status}`;
+          continue;
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          console.warn(`Model ${model} returned error in body:`, data.error?.message || data.error);
+          lastError = data.error?.message || 'Provider error';
+          continue;
+        }
+
+        rawText = data.choices?.[0]?.message?.content;
+        if (rawText) {
+          console.log(`✅ Success with model: ${model}`);
+          break;
+        }
+      } catch (err) {
+        if (err.message === 'API key') throw err;
+        console.warn(`Model ${model} threw error:`, err.message);
+        lastError = err.message;
+      }
     }
   }
 

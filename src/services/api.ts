@@ -169,4 +169,9 @@ export const attemptsAPI = {
   getMine: () => request('/attempts/mine'),
 };
 
+// ── Achievements API ──
+export const achievementsAPI = {
+  getAll: () => request('/achievements'),
+};
+
 export default request;

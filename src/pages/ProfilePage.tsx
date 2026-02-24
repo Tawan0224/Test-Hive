@@ -2,68 +2,51 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
-import { attemptsAPI, quizAPI } from '../services/api'
-
-// Sample achievements data (keep until achievements are implemented in backend)
-const sampleAchievements = [
-  {
-    id: 1,
-    name: 'Combo King',
-    icon: '🏆',
-    description: 'Complete 10 quizzes in a row',
-    unlocked: true,
-  },
-  {
-    id: 2,
-    name: 'Quick Thinker',
-    icon: '⚡',
-    description: 'Complete a quiz in under 2 minutes',
-    unlocked: true,
-  },
-  {
-    id: 3,
-    name: 'Sharp Shooter',
-    icon: '🎯',
-    description: 'Score 100% on any quiz',
-    unlocked: true,
-  },
-  {
-    id: 4,
-    name: 'Streak Master',
-    icon: '🔥',
-    description: 'Maintain a 7-day streak',
-    unlocked: true,
-  },
-]
+import { attemptsAPI, quizAPI, achievementsAPI } from '../services/api'
 
 const HISTORY_PREVIEW_COUNT = 5
 
 const ProfilePage = () => {
   const navigate = useNavigate()
   const { user, isLoading, isAuthenticated } = useAuth()
-  const [achievements] = useState(sampleAchievements)
+  const [achievements, setAchievements] = useState<any[]>([])
   const [testHistory, setTestHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [showAllHistory, setShowAllHistory] = useState(false)
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       try {
-        const response = await attemptsAPI.getMine()
-        if (response.success && response.data) {
-          setTestHistory((response.data as any).attempts)
+        const [historyRes, achievementsRes] = await Promise.all([
+          attemptsAPI.getMine(),
+          achievementsAPI.getAll(),
+        ])
+        if (historyRes.success && historyRes.data) {
+          setTestHistory((historyRes.data as any).attempts)
+        }
+        if (achievementsRes.success && achievementsRes.data) {
+          const allAchievements = achievementsRes.data as any[]
+          const unlockedIds = new Set(
+            (user?.achievements || []).map((a: any) => a.achievementId?._id || a.achievementId)
+          )
+          setAchievements(
+            allAchievements.map((a: any) => ({
+              ...a,
+              unlocked: unlockedIds.has(a._id),
+            }))
+          )
         }
       } catch (err) {
-        console.error('Failed to fetch history:', err)
+        console.error('Failed to fetch data:', err)
       }
       setHistoryLoading(false)
     }
     if (isAuthenticated) {
-      fetchHistory()
+      fetchData()
     } else {
       setHistoryLoading(false)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, user?.achievements])
 
   const handleEditProfile = () => {
     navigate('/profile/edit')
@@ -277,9 +260,9 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {achievements.map((achievement) => (
+                  {achievements.map((achievement: any) => (
                     <div
-                      key={achievement.id}
+                      key={achievement._id}
                       className={`p-3 rounded-md border text-center transition-colors duration-200
                         ${achievement.unlocked
                           ? 'bg-[#161b22] border-[#30363d] hover:border-[#8b949e]'
