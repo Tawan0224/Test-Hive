@@ -11,7 +11,6 @@ import aiRoutes from './src/routes/ai.js';
 import achievementRoutes from './src/routes/achievements.js';
 
 dotenv.config();
-console.log('🔑 OpenRouter key loaded:', process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌');
 
 // Ensure temp upload directory exists
 const UPLOAD_DIR = '/tmp/testhive-uploads';
