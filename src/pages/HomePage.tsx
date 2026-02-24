@@ -188,25 +188,25 @@ const HomePage = () => {
           navbarVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <nav className="px-8 py-6">
+        <nav className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             {/* Logo with Icon */}
             <a 
               href="/home" 
-              className="flex items-center gap-3 text-2xl font-display font-bold tracking-wider text-white
+              className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl lg:text-2xl font-display font-bold tracking-wider text-white
                          hover:text-hive-purple-light transition-colors duration-300"
             >
               {/* Favicon/Logo Icon */}
               <img 
                 src="/favicon.ico" 
                 alt="TestHive Logo" 
-                className="w-8 h-8"
+                className="w-6 h-6 sm:w-8 sm:h-8"
               />
               <span className="italic">TestHive</span>
             </a>
 
             {/* Navigation Links */}
-            <div className="flex items-center gap-10">
+            <div className="flex items-center gap-3 sm:gap-6 lg:gap-10">
               {/* About Button - scrolls to about section */}
               <button
                 onClick={() => scrollToSection(aboutRef)}
@@ -238,12 +238,12 @@ const HomePage = () => {
       </div>
 
       {/* Hero Section */}
-      <main className="relative z-10 min-h-screen flex items-center">
-        <div className="max-w-7xl mx-auto px-8 w-full">
+      <main className="relative z-10 min-h-screen flex items-center pt-20 sm:pt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="max-w-2xl">
             {/* Subtitle */}
             <p
-              className="text-white/70 text-lg mb-4 font-body tracking-wide opacity-0"
+              className="text-white/70 text-base sm:text-lg mb-4 font-body tracking-wide opacity-0"
               style={{
                 animation: "fadeSlideUp 0.8s ease-out forwards",
                 animationDelay: "0.2s",
@@ -254,7 +254,7 @@ const HomePage = () => {
 
             {/* Main Heading */}
             <h1
-              className="text-5xl md:text-6xl lg:text-7xl font-display font-bold 
+              className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold 
                          text-white leading-tight mb-8 opacity-0"
               style={{
                 animation: "fadeSlideUp 0.8s ease-out forwards",
@@ -304,7 +304,7 @@ const HomePage = () => {
 
         {/* Scroll Indicator */}
         <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-0"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 opacity-0"
           style={{
             animation: "fadeSlideUp 0.8s ease-out forwards",
             animationDelay: "1s",
@@ -318,17 +318,17 @@ const HomePage = () => {
       </main>
 
       {/* Join Session Section */}
-      <section ref={joinRef} className="relative z-10 py-24 px-8">
+      <section ref={joinRef} className="relative z-10 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-blue/5 to-transparent pointer-events-none" />
         
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4">
               Join a <span className="text-hive-blue">Live Session</span>
             </h2>
-            <p className="text-white/60 text-lg font-body">
+            <p className="text-white/60 text-base sm:text-lg font-body">
               Enter a session PIN to join a live quiz
             </p>
           </div>
@@ -349,8 +349,8 @@ const HomePage = () => {
               />
               
               {/* Card content */}
-              <div className="relative bg-dark-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-                <div className="flex gap-4">
+              <div className="relative bg-dark-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-8">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <input
                     type="text"
                     placeholder="Enter PIN"
@@ -366,7 +366,7 @@ const HomePage = () => {
                             focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20
                             transition-all duration-300 uppercase"
                   />
-                  <Button onClick={handleJoinQuiz} className="px-8 py-4" disabled={joinLoading}>
+                  <Button onClick={handleJoinQuiz} className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4" disabled={joinLoading}>
                     {joinLoading ? 'Joining...' : 'Join'}
                   </Button>
                 </div>
@@ -382,17 +382,17 @@ const HomePage = () => {
       </section>
 
       {/* About Section */}
-      <section ref={aboutRef} className="relative z-10 py-24 px-8">
+      <section ref={aboutRef} className="relative z-10 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-purple/5 to-transparent pointer-events-none" />
         
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16 scroll-animate opacity-0 translate-y-10 transition-all duration-700">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-6">
               About <span className="text-hive-purple">TestHive</span>
             </h2>
-            <p className="text-white/60 text-lg max-w-2xl mx-auto font-body leading-relaxed">
+            <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto font-body leading-relaxed">
               TestHive is a gamified learning platform where you can create, take, and share 
               quizzes and flashcards. Our AI-powered system can automatically generate questions 
               from your PDFs, making study material creation faster and more accessible.
@@ -400,7 +400,7 @@ const HomePage = () => {
           </div>
 
           {/* Features Grid */}
-          <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+          <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-16 sm:mb-24">
             {features.map((feature, index) => (
               <div
                 key={feature.title}
@@ -420,7 +420,7 @@ const HomePage = () => {
           {/* Team Section */}
           <div ref={teamRef} className="scroll-animate opacity-0 translate-y-10 transition-all duration-700">
             <div className="text-center mb-12">
-              <h3 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
+              <h3 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4">
                 Meet the team
               </h3>
               <div className="w-12 h-1 bg-white/30 mx-auto rounded-full" />
@@ -499,7 +499,7 @@ const HomePage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 px-8 border-t border-white/5">
+      <footer className="relative z-10 py-8 px-4 sm:px-6 lg:px-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-white/30 font-body text-sm">
             © 2026 TestHive. Built with love for Senior Project I.

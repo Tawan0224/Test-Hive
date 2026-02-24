@@ -360,13 +360,13 @@ const MultipleChoiceQuiz = () => {
                      ${battle.screenShake ? 'animate-battle-screen-shake' : ''}`}>
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-purple/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-56 h-56 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-hive-purple/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-52 h-52 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-hive-blue/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[480px] sm:h-[480px] lg:w-[600px] lg:h-[600px] bg-hive-purple/5 rounded-full blur-3xl" />
       </div>
 
       {/* ─── LEFT HP BAR ─── */}
-      <div className="absolute top-[280px] left-60 z-30 pointer-events-none">
+      <div className="absolute top-24 sm:top-[220px] lg:top-[280px] left-2 sm:left-12 lg:left-60 z-30 pointer-events-none scale-75 sm:scale-90 lg:scale-100 origin-left">
         <BattleHPBar
           current={battle.birdHP}
           max={BATTLE_CONFIG.BIRD_MAX_HP}
@@ -376,12 +376,12 @@ const MultipleChoiceQuiz = () => {
         />
       </div>
       {/* ─── LEFT MASCOT: BIRD (Player) ─── */}
-      <div className="absolute -left-10 bottom-2 w-[860px] h-[920px] z-10 pointer-events-none overflow-visible">
+      <div className="absolute -left-40 sm:-left-28 lg:-left-10 -bottom-24 sm:-bottom-8 lg:bottom-2 w-[440px] h-[500px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
       {/* ─── RIGHT HP BAR ─── */}
-      <div className="absolute top-[280px] right-20 z-30 pointer-events-none">
+      <div className="absolute top-24 sm:top-[220px] lg:top-[280px] right-2 sm:right-8 lg:right-20 z-30 pointer-events-none scale-75 sm:scale-90 lg:scale-100 origin-right">
         <BattleHPBar
           current={battle.octopusHP}
           max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
@@ -391,7 +391,7 @@ const MultipleChoiceQuiz = () => {
         />
       </div>
       {/* ─── RIGHT MASCOT: OCTOPUS (Enemy) ─── */}
-      <div className="absolute -right-12 -bottom-20 w-[780px] h-[880px] z-10 pointer-events-none overflow-visible">
+      <div className="absolute -right-36 sm:-right-24 lg:-right-12 -bottom-24 sm:-bottom-16 lg:-bottom-20 w-[420px] h-[490px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
 
@@ -408,23 +408,23 @@ const MultipleChoiceQuiz = () => {
       {/* Main Content */}
       <div className="relative z-20 h-full flex flex-col">
         {/* Header */}
-        <nav className="flex-shrink-0 px-8 py-4">
+        <nav className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <a 
               href="/home" 
-              className="text-2xl font-display font-bold tracking-wider text-white
+              className="text-lg sm:text-xl lg:text-2xl font-display font-bold tracking-wider text-white
                          hover:text-hive-purple-light transition-colors duration-300 italic"
             >
               TestHive
             </a>
-            <h2 className="text-xl font-display font-medium text-white tracking-wide">
+            <h2 className="hidden sm:block text-lg lg:text-xl font-display font-medium text-white tracking-wide">
               Multiple choices
             </h2>
             <button
               onClick={handleLeaveQuiz}
-              className="px-6 py-2.5 border border-hive-purple/40 text-white/90 rounded-lg 
+              className="px-3 sm:px-6 py-2 sm:py-2.5 border border-hive-purple/40 text-white/90 rounded-lg 
                          hover:bg-hive-purple/10 hover:border-hive-purple transition-all duration-300 
-                         text-sm font-medium font-body"
+                         text-xs sm:text-sm font-medium font-body"
             >
               Leave Quiz
             </button>
@@ -432,8 +432,8 @@ const MultipleChoiceQuiz = () => {
         </nav>
 
         {/* Timer & Progress */}
-        <div className="flex-shrink-0 px-8 py-2">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-8">
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-2">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-8">
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white/60 text-sm font-body">Time Remaining</span>
@@ -460,9 +460,9 @@ const MultipleChoiceQuiz = () => {
                 </div>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right w-full sm:w-auto">
               <p className="text-white/80 text-sm font-medium tracking-wide font-body">Question</p>
-              <p className="text-white text-3xl font-bold mt-1 font-display">
+              <p className="text-white text-2xl sm:text-3xl font-bold mt-1 font-display">
                 <span className="text-hive-purple-light">{answeredCount}</span>
                 <span className="text-white/40">/</span>
                 <span>{totalQuestions}</span>
@@ -473,7 +473,7 @@ const MultipleChoiceQuiz = () => {
 
         {/* Bird Defeated Overlay */}
         {battle.birdDefeated && (
-          <div className="flex-shrink-0 flex justify-center px-8 py-2">
+          <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 py-2">
             <div className="bg-red-500/20 border border-red-500/40 rounded-xl px-6 py-3 backdrop-blur-sm">
               <p className="text-red-400 font-display font-bold text-center">
                 Bird has been defeated! Submitting results...
@@ -483,12 +483,12 @@ const MultipleChoiceQuiz = () => {
         )}
 
         {/* Question Card */}
-        <div className="flex-shrink-0 flex justify-center px-8 py-4">
+        <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 py-4">
           <div className="relative w-full max-w-2xl">
             <div className="absolute inset-0 bg-hive-blue/20 rounded-2xl blur-xl transform scale-105" />
             <div className="relative bg-gradient-to-br from-dark-600/90 to-dark-700/90 backdrop-blur-md 
-                            border border-hive-blue/30 rounded-2xl p-6 shadow-2xl">
-              <p className="text-white text-lg text-center leading-relaxed font-medium font-body">
+                            border border-hive-blue/30 rounded-2xl p-4 sm:p-6 shadow-2xl">
+              <p className="text-white text-base sm:text-lg text-center leading-relaxed font-medium font-body">
                 {currentQuestion.questionText}
               </p>
             </div>
@@ -499,7 +499,7 @@ const MultipleChoiceQuiz = () => {
         <div className="flex-1" />
 
         {/* Navigation Buttons */}
-        <div className="flex-shrink-0 flex items-center justify-center gap-6 py-4">
+        <div className="flex-shrink-0 flex items-center justify-center gap-3 sm:gap-6 py-3 sm:py-4 px-4">
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0 || isAnswerLocked || battle.birdDefeated}
@@ -508,8 +508,8 @@ const MultipleChoiceQuiz = () => {
                          ? 'bg-dark-600/30 text-white/30 cursor-not-allowed' 
                          : 'bg-dark-600/50 text-white/90 hover:bg-dark-500/50 border border-white/10'}`}
           >
-            <ChevronLeft size={18} />
-            <span className="text-sm font-medium">Previous</span>
+            <ChevronLeft size={16} />
+            <span className="text-xs sm:text-sm font-medium">Previous</span>
           </button>
           
           <button
@@ -522,13 +522,13 @@ const MultipleChoiceQuiz = () => {
             <span className="text-sm font-medium">
               {currentQuestionIndex === totalQuestions - 1 ? 'Finish' : 'Next'}
             </span>
-            <ChevronRight size={18} />
+            <ChevronRight size={16} />
           </button>
         </div>
 
         {/* Answer Options */}
-        <div className="flex-shrink-0 flex justify-center px-8 pb-8">
-        <div className="w-full max-w-4xl grid grid-cols-2 gap-4">
+        <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 pb-6 sm:pb-8">
+        <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {currentQuestion.options.map((option, index) => {
             const style = getOptionStyle(index)
             
@@ -537,7 +537,7 @@ const MultipleChoiceQuiz = () => {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isAnswerLocked || battle.birdDefeated}
-                className={`relative min-h-[120px] py-8 px-8 rounded-2xl text-xl font-bold transition-all duration-300 
+                className={`relative min-h-[92px] sm:min-h-[120px] py-5 sm:py-8 px-4 sm:px-8 rounded-2xl text-base sm:text-xl font-bold transition-all duration-300 
                           transform hover:scale-[1.02] overflow-hidden group font-body
                           text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
                           disabled:hover:scale-100 flex items-center justify-center text-center

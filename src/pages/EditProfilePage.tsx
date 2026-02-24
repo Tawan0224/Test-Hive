@@ -226,7 +226,7 @@ const EditProfilePage = () => {
     <div className="min-h-screen bg-[#0a0a0f]">
       <Navbar />
       
-      <main className="relative z-10 pt-24 px-6 pb-12">
+      <main className="relative z-10 pt-20 sm:pt-24 px-4 sm:px-6 pb-12">
         <div className="max-w-2xl mx-auto">
           {/* Page Header */}
           <div className="mb-6 pb-6 border-b border-[#21262d]">
@@ -327,10 +327,10 @@ const EditProfilePage = () => {
                 <label className="block text-sm font-medium text-white mb-2">
                   Profile picture
                 </label>
-                <div className="relative">
+                <div className="relative mx-auto md:mx-0 w-40 h-40 sm:w-48 sm:h-48">
                   <div 
                     onClick={handleImageClick}
-                    className="w-48 h-48 rounded-full overflow-hidden border-2 border-[#30363d] 
+                    className="w-full h-full rounded-full overflow-hidden border-2 border-[#30363d] 
                              cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   >
                     {avatarSrc ? (
@@ -464,15 +464,15 @@ const EditProfilePage = () => {
                   {errors.confirmPassword && <p className="mt-1 text-xs text-[#f85149]">{errors.confirmPassword}</p>}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePasswordSubmit}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handlePasswordSubmit}
                     disabled={isLoading}
-                    className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
+                  className="w-full sm:w-auto px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
                              rounded-md text-sm font-medium text-white
                              transition-colors duration-200 disabled:opacity-50"
-                  >
+                >
                     {isLoading ? 'Updating...' : 'Update password'}
                   </button>
                   <button
@@ -482,10 +482,10 @@ const EditProfilePage = () => {
                       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
                       setErrors({})
                     }}
-                    className="px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
+                  className="w-full sm:w-auto px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
                              rounded-md text-sm font-medium text-[#c9d1d9]
                              transition-colors duration-200"
-                  >
+                >
                     Cancel
                   </button>
                 </div>
@@ -493,11 +493,11 @@ const EditProfilePage = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
+                className="w-full sm:w-auto px-4 py-1.5 bg-[#238636] hover:bg-[#2ea043] border border-[#238636]
                          rounded-md text-sm font-medium text-white
                          transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -506,7 +506,7 @@ const EditProfilePage = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
+                className="w-full sm:w-auto px-4 py-1.5 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d]
                          rounded-md text-sm font-medium text-[#c9d1d9]
                          transition-colors duration-200"
               >

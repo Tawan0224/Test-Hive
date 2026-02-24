@@ -274,28 +274,28 @@ const MatchingQuiz = () => {
     <div className={`h-screen w-screen relative overflow-hidden ${battle.screenShake ? 'animate-battle-screen-shake' : ''}`}>
       {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-56 h-56 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-hive-purple/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-52 h-52 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-hive-blue/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[480px] sm:h-[480px] lg:w-[600px] lg:h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
       </div>
 
       {/* ─── LEFT HP BAR ─── */}
-      <div className="absolute top-[280px] left-20 z-30 pointer-events-none">
+      <div className="absolute top-24 sm:top-[220px] lg:top-[280px] left-2 sm:left-8 lg:left-20 z-30 pointer-events-none scale-75 sm:scale-90 lg:scale-100 origin-left">
         <BattleHPBar current={battle.birdHP} max={BATTLE_CONFIG.BIRD_MAX_HP}
           name="Bird" side="left" isHit={battle.isBirdHit} />
       </div>
       {/* ─── BIRD MASCOT ─── */}
-      <div className="absolute -left-32 bottom-2 w-[860px] h-[920px] z-10 pointer-events-none overflow-visible">
+      <div className="absolute -left-40 sm:-left-36 lg:-left-32 -bottom-24 sm:-bottom-8 lg:bottom-2 w-[440px] h-[500px] sm:w-[640px] sm:h-[760px] lg:w-[860px] lg:h-[920px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizBirdMascot battleState={battle.birdState} />
       </div>
 
       {/* ─── RIGHT HP BAR ─── */}
-      <div className="absolute top-[280px] right-20 z-30 pointer-events-none">
+      <div className="absolute top-24 sm:top-[220px] lg:top-[280px] right-2 sm:right-8 lg:right-20 z-30 pointer-events-none scale-75 sm:scale-90 lg:scale-100 origin-right">
         <BattleHPBar current={battle.octopusHP} max={BATTLE_CONFIG.OCTOPUS_MAX_HP}
           name="Octopus" side="right" isHit={battle.isOctopusHit} />
       </div>
       {/* ─── OCTOPUS MASCOT ─── */}
-      <div className="absolute -right-36 -bottom-20 w-[780px] h-[880px] z-10 pointer-events-none overflow-visible">
+      <div className="absolute -right-40 sm:-right-40 lg:-right-36 -bottom-24 sm:-bottom-16 lg:-bottom-20 w-[420px] h-[490px] sm:w-[610px] sm:h-[730px] lg:w-[780px] lg:h-[880px] z-10 pointer-events-none overflow-visible opacity-80 sm:opacity-90 lg:opacity-100">
         <QuizOctopusMascot battleState={battle.octopusState} />
       </div>
 
@@ -307,22 +307,22 @@ const MatchingQuiz = () => {
       {/* Main Content */}
       <div className="relative z-20 h-full flex flex-col">
         {/* Header */}
-        <nav className="flex-shrink-0 px-8 py-4">
+        <nav className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <a href="/home" className="text-2xl font-display font-bold tracking-wider text-white hover:text-hive-purple-light transition-colors duration-300 italic">
+            <a href="/home" className="text-lg sm:text-xl lg:text-2xl font-display font-bold tracking-wider text-white hover:text-hive-purple-light transition-colors duration-300 italic">
               TestHive
             </a>
-            <h2 className="text-xl font-display font-medium text-white tracking-wide">Matching Quiz</h2>
+            <h2 className="hidden sm:block text-lg lg:text-xl font-display font-medium text-white tracking-wide">Matching Quiz</h2>
             <button onClick={handleLeaveQuiz}
-              className="px-6 py-2.5 border border-hive-purple/40 text-white/90 rounded-lg hover:bg-hive-purple/10 hover:border-hive-purple transition-all duration-300 text-sm font-medium font-body">
+              className="px-3 sm:px-6 py-2 sm:py-2.5 border border-hive-purple/40 text-white/90 rounded-lg hover:bg-hive-purple/10 hover:border-hive-purple transition-all duration-300 text-xs sm:text-sm font-medium font-body">
               Leave Quiz
             </button>
           </div>
         </nav>
 
         {/* Timer & Progress */}
-        <div className="flex-shrink-0 px-8 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-8">
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-8">
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white/60 text-sm font-body">Time Remaining</span>
@@ -344,16 +344,16 @@ const MatchingQuiz = () => {
                 </div>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right w-full sm:w-auto">
               <p className="text-white/80 text-sm font-medium tracking-wide font-body">Pairs Matched</p>
-              <p className="text-white text-3xl font-bold mt-1 font-display">
+              <p className="text-white text-2xl sm:text-3xl font-bold mt-1 font-display">
                 <span className="text-hive-purple-light">{matchedPairIds.size}</span>
                 <span className="text-white/40">/</span>
                 <span>{quizData.pairs.length}</span>
               </p>
             </div>
           </div>
-          <div className="max-w-4xl mx-auto mt-4">
+          <div className="max-w-4xl mx-auto mt-3 sm:mt-4">
             <div className="h-2 bg-dark-600/50 rounded-full overflow-hidden border border-white/5">
               <div className="h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progressPercentage}%`, background: 'linear-gradient(90deg, #9333EA, #EC4899)' }} />
@@ -363,7 +363,7 @@ const MatchingQuiz = () => {
 
         {/* Bird Defeated Overlay */}
         {battle.birdDefeated && (
-          <div className="flex-shrink-0 flex justify-center px-8 py-2">
+          <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 py-2">
             <div className="bg-red-500/20 border border-red-500/40 rounded-xl px-6 py-3 backdrop-blur-sm">
               <p className="text-red-400 font-display font-bold text-center">
                 Bird has been defeated! Submitting results...
@@ -373,7 +373,7 @@ const MatchingQuiz = () => {
         )}
 
         {/* Matching Area */}
-        <div className="flex-1 px-8 py-4 overflow-y-auto">
+        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 overflow-y-auto">
           <div ref={containerRef} className="max-w-4xl mx-auto relative min-h-full">
 
             {/* SVG Lines — only for correct matches */}
@@ -400,10 +400,10 @@ const MatchingQuiz = () => {
             </svg>
 
             {/* Two Columns */}
-            <div className="flex gap-16 justify-center pb-8">
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 justify-center pb-8">
 
               {/* Left Column — Terms */}
-              <div className="flex flex-col gap-3 w-64">
+              <div className="flex flex-col gap-3 w-full lg:w-64">
                 <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Terms</h3>
                 {shuffledLeft.map((pair) => {
                   const isMatched = matchedPairIds.has(pair.id)
@@ -437,7 +437,7 @@ const MatchingQuiz = () => {
               </div>
 
               {/* Right Column — Definitions */}
-              <div className="flex flex-col gap-3 w-72">
+              <div className="flex flex-col gap-3 w-full lg:w-72">
                 <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Definitions</h3>
                 {shuffledRight.map((pair) => {
                   const isMatched = matchedPairIds.has(pair.id)
@@ -475,9 +475,9 @@ const MatchingQuiz = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="flex-shrink-0 px-8 py-4 border-t border-white/5 bg-dark-900/50 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <p className="text-white/40 text-sm font-body">
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 border-t border-white/5 bg-dark-900/50 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
+            <p className="text-white/40 text-sm font-body max-w-full sm:max-w-[70%]">
               {isComplete
                 ? `Completed! ${matchedPairIds.size}/${quizData.pairs.length} pairs matched correctly`
                 : battle.birdDefeated
@@ -492,7 +492,7 @@ const MatchingQuiz = () => {
             <button
               onClick={handleSubmit}
               disabled={battle.birdDefeated}
-              className="px-8 py-3 bg-gradient-to-r from-hive-purple to-hive-pink text-white rounded-xl 
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-hive-purple to-hive-pink text-white rounded-xl 
                          font-semibold hover:shadow-lg hover:shadow-hive-purple/30 transition-all duration-300
                          disabled:opacity-50 disabled:cursor-not-allowed font-body">
               Submit

@@ -15,21 +15,21 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-dark-900/80 border-b border-white/5 px-8 py-6">
+    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-dark-900/80 border-b border-white/5 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
 
         {/* Logo — triggers fade transition */}
         <button
           onClick={() => fadeTo('/home')}
-          className="flex items-center gap-3 text-2xl font-display font-bold tracking-wider text-white
+          className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl lg:text-2xl font-display font-bold tracking-wider text-white
                      hover:text-hive-purple-light transition-colors duration-300"
         >
-          <img src="/favicon.ico" alt="TestHive Logo" className="w-8 h-8" />
+          <img src="/favicon.ico" alt="TestHive Logo" className="w-6 h-6 sm:w-8 sm:h-8" />
           <span className="italic">TestHive</span>
         </button>
 
         {/* Navigation Links */}
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-3 sm:gap-6 lg:gap-10">
           <button
             onClick={() => fadeTo('/home')}
             className={`nav-link ${isActive('/home') ? 'text-hive-purple-light' : ''}`}

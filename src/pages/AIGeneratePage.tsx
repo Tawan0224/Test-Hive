@@ -168,38 +168,38 @@ const AIGeneratePage = () => {
       <Navbar />
 
       {/* Main Content */}
-      <main className="h-full pt-20 pb-28 px-8">
+      <main className="h-full pt-16 sm:pt-20 pb-36 sm:pb-28 px-4 sm:px-6 lg:px-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto h-full">
-          <div className="flex items-center justify-between gap-8 h-full">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 sm:gap-8 min-h-full xl:h-full">
 
             {/* Left Side - 3D Mascot */}
-            <div className="flex-1 h-full flex items-center justify-center relative">
+            <div className="w-full xl:flex-1 h-[220px] sm:h-[300px] xl:h-full flex items-center justify-center relative">
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-[400px] h-[400px] rounded-full bg-purple-500/10 blur-[100px]" />
+                <div className="w-[240px] h-[240px] sm:w-[340px] sm:h-[340px] xl:w-[400px] xl:h-[400px] rounded-full bg-purple-500/10 blur-[90px] sm:blur-[100px]" />
               </div>
-              <div className="w-full h-[450px] relative z-10">
+              <div className="w-full h-full xl:h-[450px] relative z-10">
                 <MascotBird />
               </div>
             </div>
 
             {/* Right Side - Options Panel */}
-            <div className="w-[520px] flex-shrink-0">
-              <div className="relative bg-[#1a1a2e]/80 backdrop-blur-xl rounded-3xl border border-purple-500/20 p-10">
+            <div className="w-full xl:w-[520px] flex-shrink-0">
+              <div className="relative bg-[#1a1a2e]/80 backdrop-blur-xl rounded-3xl border border-purple-500/20 p-5 sm:p-8 lg:p-10">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/5 pointer-events-none" />
 
-                <div className="relative space-y-10">
+                <div className="relative space-y-7 sm:space-y-10">
                   {/* Quiz Type Selection */}
                   <div>
-                    <h3 className="text-white/90 text-lg font-medium mb-5">
+                    <h3 className="text-white/90 text-base sm:text-lg font-medium mb-4 sm:mb-5">
                       Choose the question type you want to generate
                     </h3>
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {quizTypes.map((type) => (
                         <button
                           key={type.value}
                           onClick={() => setSelectedQuizType(type.value)}
                           className={`
-                            flex-1 py-4 px-4 rounded-xl text-sm font-medium whitespace-nowrap
+                            flex-1 py-3.5 px-4 rounded-xl text-sm font-medium whitespace-nowrap
                             transition-all duration-200
                             ${selectedQuizType === type.value
                               ? 'bg-purple-600 text-white'
@@ -218,7 +218,7 @@ const AIGeneratePage = () => {
 
                   {/* Question Count */}
                   <div>
-                    <h3 className="text-white/90 text-lg font-medium mb-5">
+                    <h3 className="text-white/90 text-base sm:text-lg font-medium mb-4 sm:mb-5">
                       Choose the number of{' '}
                       {selectedQuizType === 'matching'
                         ? 'pairs'
@@ -227,13 +227,13 @@ const AIGeneratePage = () => {
                         : 'questions'}{' '}
                       to generate
                     </h3>
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       {questionCounts.map((count) => (
                         <button
                           key={count}
                           onClick={() => setSelectedCount(count)}
                           className={`
-                            flex-1 py-4 px-4 rounded-xl text-base font-medium
+                            flex-1 py-3.5 px-4 rounded-xl text-sm sm:text-base font-medium
                             transition-all duration-200
                             ${selectedCount === count
                               ? 'bg-purple-600 text-white'
@@ -262,10 +262,10 @@ const AIGeneratePage = () => {
       </main>
 
       {/* Bottom Input Bar - Fixed */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a1a] via-[#0a0a1a]/95 to-transparent pt-8 pb-6 px-8">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a1a] via-[#0a0a1a]/95 to-transparent pt-4 sm:pt-8 pb-4 sm:pb-6 px-3 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handlePromptSubmit} className="relative">
-            <div className="relative flex items-center gap-3 p-2 bg-[#12121f]/90 border border-white/10 rounded-full backdrop-blur-xl">
+            <div className="relative flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 p-2 bg-[#12121f]/90 border border-white/10 rounded-2xl sm:rounded-full backdrop-blur-xl">
 
               {/* PDF Upload Area */}
               <div
@@ -284,9 +284,9 @@ const AIGeneratePage = () => {
                 />
 
                 {uploadedFile ? (
-                  <div className="flex items-center gap-2 py-2.5 px-4 bg-[#1a1a2e]/80 border border-purple-500/30 rounded-full">
+                  <div className="flex items-center gap-2 py-2.5 px-4 bg-[#1a1a2e]/80 border border-purple-500/30 rounded-full max-w-full">
                     <FileText className="w-4 h-4 text-purple-400" />
-                    <span className="text-white/80 text-sm max-w-[120px] truncate">
+                    <span className="text-white/80 text-sm max-w-[100px] sm:max-w-[120px] truncate">
                       {uploadedFile.name}
                     </span>
                     <span className="text-white/40 text-xs">{uploadedFile.size}</span>
@@ -302,7 +302,7 @@ const AIGeneratePage = () => {
                   <label
                     htmlFor="pdf-upload"
                     className={`
-                      flex items-center gap-2 py-3.5 px-5
+                      flex items-center gap-2 py-3 px-4 sm:py-3.5 sm:px-5
                       bg-[#1a1a2e]/80 border rounded-full cursor-pointer
                       transition-all duration-200
                       ${isDragging
@@ -326,7 +326,7 @@ const AIGeneratePage = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Add custom instructions (optional)..."
                 disabled={isGenerating}
-                className="flex-1 bg-transparent text-white/90 placeholder:text-white/30
+                className="w-full sm:flex-1 bg-transparent text-white/90 placeholder:text-white/30
                            outline-none text-sm px-2 disabled:opacity-50"
               />
 

@@ -133,7 +133,7 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-[#0a0a0f]">
       <Navbar />
 
-      <main className="relative z-10 pt-24 px-6 pb-12">
+      <main className="relative z-10 pt-20 sm:pt-24 px-4 sm:px-6 pb-12">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
 
@@ -142,8 +142,8 @@ const ProfilePage = () => {
               <div className="sticky top-28">
 
                 {/* Profile Picture */}
-                <div className="mb-4">
-                  <div className="w-[296px] h-[296px] rounded-full overflow-hidden border border-[#30363d]">
+                <div className="mb-4 flex justify-center md:justify-start">
+                  <div className="w-[220px] h-[220px] sm:w-[296px] sm:h-[296px] rounded-full overflow-hidden border border-[#30363d]">
                     {user.profilePicture ? (
                       <img
                         src={user.profilePicture}
@@ -155,7 +155,7 @@ const ProfilePage = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] flex items-center justify-center">
-                        <span className="text-6xl font-bold text-white">
+                        <span className="text-4xl sm:text-6xl font-bold text-white">
                           {getInitials(user.displayName || user.username)}
                         </span>
                       </div>
@@ -164,8 +164,8 @@ const ProfilePage = () => {
                 </div>
 
                 {/* User Info */}
-                <div className="mb-4">
-                  <h1 className="text-2xl font-semibold text-white">
+                <div className="mb-4 text-center md:text-left">
+                  <h1 className="text-xl sm:text-2xl font-semibold text-white">
                     {user.displayName || user.username}
                   </h1>
                   <p className="text-xl text-[#7d8590] font-light">
@@ -185,7 +185,7 @@ const ProfilePage = () => {
                 </button>
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 mt-4 text-sm">
+                <div className="flex items-center justify-center md:justify-start gap-4 mt-4 text-sm">
                   <div className="flex items-center gap-1 text-[#7d8590]">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -207,7 +207,7 @@ const ProfilePage = () => {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <span>{user.email}</span>
+                    <span className="break-all">{user.email}</span>
                   </div>
                   {user.createdAt && (
                     <div className="flex items-center gap-2">

@@ -106,7 +106,7 @@ const TreasureChest = () => {
   const mouse = useMousePosition()
 
   return (
-    <div className="absolute top-20 right-0 w-[55%] h-full pointer-events-none">
+    <div className="absolute top-24 sm:top-20 right-0 w-full sm:w-[70%] lg:w-[55%] h-[45vh] sm:h-[60vh] lg:h-full pointer-events-none opacity-60 sm:opacity-80 lg:opacity-100">
       <Canvas
         camera={{ position: [0, 0, 4], fov: 50 }}
         style={{ background: 'transparent' }}

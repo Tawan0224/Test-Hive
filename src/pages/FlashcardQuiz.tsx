@@ -143,31 +143,31 @@ const FlashcardQuiz = () => {
     return (
       <div className="min-h-screen w-full relative overflow-hidden">
         {/* Ambient background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/4 w-56 h-56 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-hive-purple/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-52 h-52 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-hive-blue/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[480px] sm:h-[480px] lg:w-[600px] lg:h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-8">
+        <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4 sm:px-8">
           <div className="text-center max-w-md">
             {/* Icon */}
             <div className="text-7xl mb-6">🎉</div>
 
             {/* Title */}
-            <h1 className="text-4xl font-bold text-white font-display mb-3">Deck Complete!</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white font-display mb-3">Deck Complete!</h1>
             <p className="text-white/60 font-body mb-2 text-lg">{quizData.deckName}</p>
             <p className="text-white/40 font-body mb-10 text-sm">
               You reviewed all {totalCards} cards. Come back and study again to strengthen your memory!
             </p>
 
             {/* Stats */}
-            <div className="flex justify-center gap-6 mb-10">
-              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-8 py-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-10">
+              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-6 sm:px-8 py-5">
                 <p className="text-3xl font-bold text-white font-display">{totalCards}</p>
                 <p className="text-white/50 text-sm font-body mt-1">Total Cards</p>
               </div>
-              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-8 py-5">
+              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-6 sm:px-8 py-5">
                 <p className="text-3xl font-bold text-hive-purple-light font-display">{viewedCards.size}</p>
                 <p className="text-white/50 text-sm font-body mt-1">Cards Seen</p>
               </div>
@@ -210,24 +210,24 @@ const FlashcardQuiz = () => {
     <div className="min-h-screen w-full relative overflow-hidden">
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-hive-purple/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-hive-blue/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-56 h-56 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-hive-purple/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-52 h-52 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-hive-blue/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[480px] sm:h-[480px] lg:w-[600px] lg:h-[600px] bg-hive-pink/5 rounded-full blur-3xl" />
       </div>
 
       {/* Main Content */}
       <div className="relative z-20 min-h-screen flex flex-col">
         {/* Header */}
-        <nav className="flex-shrink-0 px-8 py-4">
+        <nav className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <a
               href="/home"
-              className="text-2xl font-display font-bold tracking-wider text-white
+              className="text-lg sm:text-xl lg:text-2xl font-display font-bold tracking-wider text-white
                          hover:text-hive-purple-light transition-colors duration-300 italic"
             >
               TestHive
             </a>
-            <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-3">
               <Layers className="w-5 h-5 text-hive-purple-light" />
               <h2 className="text-xl font-display font-medium text-white tracking-wide">
                 {quizData.deckName}
@@ -235,9 +235,9 @@ const FlashcardQuiz = () => {
             </div>
             <button
               onClick={handleLeaveDeck}
-              className="px-6 py-2.5 border border-hive-purple/40 text-white/90 rounded-lg 
+              className="px-3 sm:px-6 py-2 sm:py-2.5 border border-hive-purple/40 text-white/90 rounded-lg 
                          hover:bg-hive-purple/15 hover:border-hive-purple-light/60 transition-all duration-300
-                         uppercase tracking-widest text-xs font-semibold backdrop-blur-sm"
+                         uppercase tracking-widest text-[10px] sm:text-xs font-semibold backdrop-blur-sm"
             >
               Leave Deck
             </button>
@@ -245,17 +245,17 @@ const FlashcardQuiz = () => {
         </nav>
 
         {/* Progress Section */}
-        <div className="flex-shrink-0 px-8 py-4">
+        <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="max-w-2xl mx-auto">
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-3 gap-2 sm:gap-0">
               <div className="flex items-center gap-4">
                 <span className="text-white/70 text-sm font-medium tracking-wide font-body">Progress</span>
                 <span className="text-hive-purple-light font-bold text-sm font-display">
                   {viewedCards.size} of {totalCards} viewed
                 </span>
               </div>
-              <div className="text-right">
-                <p className="text-white text-2xl font-bold font-display">
+              <div className="text-left sm:text-right">
+                <p className="text-white text-xl sm:text-2xl font-bold font-display">
                   <span className="text-hive-purple-light">{currentCardIndex + 1}</span>
                   <span className="text-white/40 mx-1">/</span>
                   <span>{totalCards}</span>
@@ -278,7 +278,7 @@ const FlashcardQuiz = () => {
         </div>
 
         {/* Main Card Area */}
-        <div className="flex-1 flex items-center justify-center px-8 py-8">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-6 sm:py-8">
           <div
             className="relative w-full max-w-2xl cursor-pointer"
             onClick={handleFlip}
@@ -302,7 +302,7 @@ const FlashcardQuiz = () => {
 
                 {/* Card content */}
                 <div className="relative bg-gradient-to-br from-dark-600/95 to-dark-700/95 backdrop-blur-md 
-                                border border-hive-purple/30 rounded-3xl p-10 shadow-2xl min-h-[320px]
+                                border border-hive-purple/30 rounded-3xl p-6 sm:p-10 shadow-2xl min-h-[280px] sm:min-h-[320px]
                                 flex flex-col items-center justify-center">
                   {/* Question Label */}                
                   <div className="absolute top-4 left-6 flex items-center gap-2">
@@ -311,7 +311,7 @@ const FlashcardQuiz = () => {
                       Question
                     </span>
                   </div>
-                  <p className="text-white text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-4">
+                  <p className="text-white text-lg sm:text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-2 sm:px-4">
                     {currentCard.front}
                   </p>
                   <div className="absolute bottom-6 left-0 right-0 flex justify-center">
@@ -338,7 +338,7 @@ const FlashcardQuiz = () => {
 
                 {/* Card content */}
                 <div className="relative bg-gradient-to-br from-dark-600/95 to-dark-700/95 backdrop-blur-md 
-                                border border-hive-blue/30 rounded-3xl p-10 shadow-2xl min-h-[320px]
+                                border border-hive-blue/30 rounded-3xl p-6 sm:p-10 shadow-2xl min-h-[280px] sm:min-h-[320px]
                                 flex flex-col items-center justify-center">
                   {/* Answer Label */}                
                   <div className="absolute top-4 left-6 flex items-center gap-2">
@@ -347,7 +347,7 @@ const FlashcardQuiz = () => {
                       Answer
                     </span>
                   </div>
-                  <p className="text-white text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-4">
+                  <p className="text-white text-lg sm:text-xl md:text-2xl text-center leading-relaxed font-medium font-body px-2 sm:px-4">
                     {currentCard.back}
                   </p>
                   <div className="absolute bottom-6 left-0 right-0 flex justify-center">
@@ -366,7 +366,7 @@ const FlashcardQuiz = () => {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex-shrink-0 flex items-center justify-center gap-6 py-6 px-8">
+        <div className="flex-shrink-0 flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-4 sm:py-6 px-4 sm:px-8">
           <button
             onClick={handlePrevious}
             disabled={currentCardIndex === 0}
@@ -409,7 +409,7 @@ const FlashcardQuiz = () => {
         </div>
 
         {/* Keyboard shortcut hint */}
-        <div className="flex-shrink-0 pb-6">
+        <div className="flex-shrink-0 pb-6 px-4">
           <p className="text-center text-white/30 text-xs font-body">
             Press <kbd className="px-2 py-0.5 bg-dark-600/50 rounded border border-white/10 mx-1">Space</kbd>
             to flip •

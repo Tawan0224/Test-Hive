@@ -44,7 +44,7 @@
 
 @layer components {
   .btn-primary {
-    @apply px-8 py-4 bg-hive-purple text-white font-semibold rounded-full 
+    @apply px-6 py-3 sm:px-8 sm:py-4 bg-hive-purple text-white font-semibold rounded-full 
            uppercase tracking-wider text-sm
            transition-all duration-300 ease-out
            hover:bg-hive-purple-light hover:scale-105 hover:shadow-lg hover:shadow-hive-purple/40
@@ -52,7 +52,7 @@
   }
 
   .nav-link {
-    @apply text-white/90 uppercase tracking-[0.2em] text-sm font-medium
+    @apply text-white/90 uppercase tracking-[0.08em] sm:tracking-[0.2em] text-xs sm:text-sm font-medium
            transition-all duration-300
            hover:text-white hover:tracking-[0.25em];
   }
