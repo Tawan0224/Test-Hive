@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import HomePage from "./pages/HomePage";
@@ -47,6 +47,17 @@ function AppRoutes() {
       
       {/* Quiz results */}
       <Route path="/quiz-results" element={<QuizResultsPage />} />
+
+      {/* 404 */}
+      <Route path="*" element={
+        <div className="min-h-screen flex flex-col items-center justify-center text-white">
+          <h1 className="text-6xl font-bold font-orbitron mb-4">404</h1>
+          <p className="text-xl text-gray-400 mb-8">Page not found</p>
+          <Link to="/home" className="px-6 py-3 bg-hive-purple rounded-lg hover:bg-hive-purple-light transition-colors">
+            Go Home
+          </Link>
+        </div>
+      } />
     </Routes>
   );
 }
