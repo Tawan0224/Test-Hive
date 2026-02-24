@@ -155,13 +155,13 @@ export async function generateQuizFromPDF({ filePath, quizType, count, customIns
   // --- Try Claude first ---
   if (process.env.ANTHROPIC_API_KEY) {
     // Pick model based on complexity:
-    // - Haiku: flashcards or small quizzes (≤5 items) — fast & cheap
-    // - Sonnet: default for most quizzes — good balance
-    // - Opus: large quizzes (>15 items) with custom instructions — highest quality
+    // - Haiku: flashcards or 10-question quizzes — fast & cheap
+    // - Sonnet: 15 or 20 questions — good balance
+    // - Opus: only 20 questions with custom instructions (>50 chars)
     let claudeModel = 'claude-sonnet-4-20250514';
-    if (quizType === 'flashcard' || count <= 5) {
+    if (quizType === 'flashcard' || count <= 10) {
       claudeModel = 'claude-haiku-4-5-20251001';
-    } else if (count > 15 && customInstructions) {
+    } else if (count >= 20 && customInstructions && customInstructions.length > 50) {
       claudeModel = 'claude-opus-4-20250514';
     }
 

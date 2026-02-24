@@ -375,11 +375,13 @@ const MatchingQuiz = () => {
         )}
 
         {/* Matching Area */}
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 overflow-y-auto">
-          <div ref={containerRef} className="max-w-4xl mx-auto relative min-h-full">
+        {/* Mobile: split-screen with two independently scrollable halves */}
+        {/* Desktop: single scrollable area with side-by-side columns */}
+        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-2 sm:py-4 overflow-hidden lg:overflow-y-auto flex flex-col lg:block min-h-0">
+          <div ref={containerRef} className="max-w-4xl mx-auto relative lg:min-h-full flex flex-col lg:block min-h-0 h-full lg:h-auto">
 
-            {/* SVG Lines — only for correct matches */}
-            <svg className="absolute top-0 left-0 w-full pointer-events-none z-10"
+            {/* SVG Lines — only visible on desktop where columns are side by side */}
+            <svg className="absolute top-0 left-0 w-full pointer-events-none z-10 hidden lg:block"
               style={{ height: '100%', minHeight: '100%' }}>
               <defs>
                 <linearGradient id="correctGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -401,75 +403,89 @@ const MatchingQuiz = () => {
               ))}
             </svg>
 
-            {/* Two Columns */}
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-16 justify-center pb-20 sm:pb-8">
+            {/* Desktop: side-by-side layout (unchanged) */}
+            {/* Mobile: stacked split-screen with independent scrolling per half */}
+            <div className="flex flex-col lg:flex-row gap-1 lg:gap-16 justify-center lg:pb-8 min-h-0 h-full lg:h-auto">
 
               {/* Left Column — Terms */}
-              <div className="flex flex-col gap-3 w-full lg:w-64">
-                <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Terms</h3>
-                {shuffledLeft.map((pair) => {
-                  const isMatched = matchedPairIds.has(pair.id)
-                  const isSelected = selectedLeftId === pair.id
-                  const isWrongFlash = wrongFlashLeftId === pair.id
+              <div className="flex flex-col min-h-0 h-1/2 lg:h-auto w-full lg:w-64">
+                <h3 className="text-white/60 text-xs lg:text-sm font-medium mb-1 lg:mb-2 text-center font-body uppercase tracking-wider flex-shrink-0">
+                  Terms
+                  {selectedRightId && <span className="text-hive-purple-light ml-2 normal-case text-xs">← Pick a match</span>}
+                </h3>
+                <div className="flex-1 overflow-y-auto lg:overflow-visible min-h-0 flex flex-col gap-2 lg:gap-3 pr-1 lg:pr-0 pb-1">
+                  {shuffledLeft.map((pair) => {
+                    const isMatched = matchedPairIds.has(pair.id)
+                    const isSelected = selectedLeftId === pair.id
+                    const isWrongFlash = wrongFlashLeftId === pair.id
 
-                  return (
-                    <div
-                      key={`left-${pair.id}`}
-                      ref={(el) => { if (el) leftItemRefs.current.set(pair.id, el) }}
-                      onClick={() => handleLeftClick(pair)}
-                      className={`relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center select-none
-                        ${isMatched
-                          ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default'
-                          : isSelected
-                            ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
-                            : isWrongFlash
-                              ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
-                              : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
-                        }`}
-                    >
-                      {isMatched && (
-                        <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
-                          <CheckCircle size={14} className="text-white" />
-                        </div>
-                      )}
-                      <span className="font-semibold text-sm sm:text-base">{pair.left}</span>
-                    </div>
-                  )
-                })}
+                    return (
+                      <div
+                        key={`left-${pair.id}`}
+                        ref={(el) => { if (el) leftItemRefs.current.set(pair.id, el) }}
+                        onClick={() => handleLeftClick(pair)}
+                        className={`relative p-2.5 sm:p-3 lg:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center select-none flex-shrink-0
+                          ${isMatched
+                            ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default'
+                            : isSelected
+                              ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
+                              : isWrongFlash
+                                ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
+                                : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
+                          }`}
+                      >
+                        {isMatched && (
+                          <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
+                            <CheckCircle size={14} className="text-white" />
+                          </div>
+                        )}
+                        <span className="font-semibold text-sm sm:text-base">{pair.left}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Right Column — Definitions */}
-              <div className="flex flex-col gap-3 w-full lg:w-72">
-                <h3 className="text-white/60 text-sm font-medium mb-2 text-center font-body uppercase tracking-wider">Definitions</h3>
-                {shuffledRight.map((pair) => {
-                  const isMatched = matchedPairIds.has(pair.id)
-                  const isSelected = selectedRightId === pair.id
-                  const isWrongFlash = wrongFlashRightId === pair.id
+              {/* Divider — mobile only */}
+              <div className="lg:hidden flex-shrink-0 h-px bg-gradient-to-r from-transparent via-hive-purple/40 to-transparent" />
 
-                  return (
-                    <div
-                      key={`right-${pair.id}`}
-                      ref={(el) => { if (el) rightItemRefs.current.set(pair.id, el) }}
-                      onClick={() => handleRightClick(pair)}
-                      className={`relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center text-xs sm:text-sm select-none
-                        ${isMatched
-                          ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-70'
-                          : isSelected
-                            ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
-                            : isWrongFlash
-                              ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
-                              : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
-                        }`}
-                    >
-                      {isMatched && (
-                        <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1">
-                          <CheckCircle size={14} className="text-white" />
-                        </div>
-                      )}
-                      <span>{pair.right}</span>
-                    </div>
-                  )
-                })}
+              {/* Right Column — Definitions */}
+              <div className="flex flex-col min-h-0 h-1/2 lg:h-auto w-full lg:w-72">
+                <h3 className="text-white/60 text-xs lg:text-sm font-medium mb-1 lg:mb-2 text-center font-body uppercase tracking-wider flex-shrink-0">
+                  Definitions
+                  {selectedLeftId && <span className="text-hive-purple-light ml-2 normal-case text-xs">← Pick a match</span>}
+                </h3>
+                <div className="flex-1 overflow-y-auto lg:overflow-visible min-h-0 flex flex-col gap-2 lg:gap-3 pr-1 lg:pr-0 pb-1">
+                  {shuffledRight.map((pair) => {
+                    const isMatched = matchedPairIds.has(pair.id)
+                    const isSelected = selectedRightId === pair.id
+                    const isWrongFlash = wrongFlashRightId === pair.id
+
+                    return (
+                      <div
+                        key={`right-${pair.id}`}
+                        ref={(el) => { if (el) rightItemRefs.current.set(pair.id, el) }}
+                        onClick={() => handleRightClick(pair)}
+                        className={`relative p-2.5 sm:p-3 lg:p-4 rounded-xl transition-all duration-200 border-2 font-body text-center text-xs sm:text-sm select-none flex-shrink-0
+                          ${isMatched
+                            ? 'bg-green-500/20 border-green-500/50 text-green-300 cursor-default opacity-70'
+                            : isSelected
+                              ? 'bg-hive-purple/30 border-hive-purple text-white scale-105 shadow-lg shadow-hive-purple/30 cursor-pointer'
+                              : isWrongFlash
+                                ? 'bg-red-500/20 border-red-500/60 text-red-300 cursor-pointer'
+                                : 'bg-dark-600/50 border-white/10 text-white/90 hover:bg-dark-500/50 hover:border-hive-purple/50 cursor-pointer'
+                          }`}
+                      >
+                        {isMatched && (
+                          <div className="absolute -top-2 -left-2 bg-green-500 rounded-full p-1">
+                            <CheckCircle size={14} className="text-white" />
+                          </div>
+                        )}
+                        <span>{pair.right}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
             </div>
