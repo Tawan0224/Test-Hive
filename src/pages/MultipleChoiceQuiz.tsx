@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { quizAPI } from '../services/api'
@@ -143,24 +143,51 @@ const sampleQuizData: QuizData = {
   ]
 }
 
+// Fisher-Yates shuffle (returns a new array)
+const shuffleArray = <T,>(arr: T[]): T[] => {
+  const shuffled = [...arr]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 const MultipleChoiceQuiz = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   const quizData: QuizData = location.state?.quizData || sampleQuizData
   const totalQuestions = quizData.questions.length
+
+  // Shuffle options once per quiz session
+  const [shuffledOptions] = useState<QuizOption[][]>(
+    () => quizData.questions.map(q => shuffleArray(q.options))
+  )
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
     Array(totalQuestions).fill(null)
   )
-  const [timeRemaining, setTimeRemaining] = useState(quizData.questions[0]?.timeLimit || 30)
-  const [totalTimeLimit] = useState(quizData.questions[0]?.timeLimit || 30)
+  // Per-question time tracking: stores remaining time for each question
+  const [timePerQuestion, setTimePerQuestion] = useState<number[]>(
+    quizData.questions.map(q => q.timeLimit || 30)
+  )
   const [isQuizComplete, setIsQuizComplete] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
-  
-  // Track how many questions have been answered
-  const [answeredCount, setAnsweredCount] = useState(0)
+
+  // Derived: how many questions have been answered
+  const answeredCount = selectedAnswers.filter(a => a !== null).length
+
+  // Ref so async callbacks (setTimeout, useEffect) always see the latest answers
+  const selectedAnswersRef = useRef(selectedAnswers)
+  useEffect(() => { selectedAnswersRef.current = selectedAnswers }, [selectedAnswers])
+
+  const isCurrentQuestionAnswered = selectedAnswers[currentQuestionIndex] !== null
+
+  // Derived values from per-question tracking
+  const timeRemaining = timePerQuestion[currentQuestionIndex] ?? 0
+  const totalTimeLimit = quizData.questions[currentQuestionIndex]?.timeLimit || 30
   
   // ─── BATTLE SYSTEM (pass totalQuestions for dynamic HP scaling) ───
   const [battle, battleActions] = useBattleSystem(totalQuestions)
@@ -169,6 +196,7 @@ const MultipleChoiceQuiz = () => {
   const [lastAnswerIndex, setLastAnswerIndex] = useState<number | null>(null)
 
   const currentQuestion = quizData.questions[currentQuestionIndex]
+  const currentOptions = shuffledOptions[currentQuestionIndex]
 
   // ─── AUTO-END QUIZ WHEN BIRD HP REACHES 0 ─────────────────────
   useEffect(() => {
@@ -181,51 +209,61 @@ const MultipleChoiceQuiz = () => {
     }
   }, [battle.birdDefeated, isQuizComplete])
 
-  // Timer
+  // Timer — decrements the current question's time each second (paused for answered questions)
   useEffect(() => {
-    if (isQuizComplete || battle.birdDefeated) return
+    if (isQuizComplete || battle.birdDefeated || isCurrentQuestionAnswered) return
 
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          // Time ran out — count as wrong answer
-          battleActions.triggerWrongAnswer()
-          setAnsweredCount(prev => prev + 1)
-          
-          if (currentQuestionIndex < totalQuestions - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1)
-            return quizData.questions[currentQuestionIndex + 1]?.timeLimit || 30
-          } else {
-            setIsQuizComplete(true)
-            return 0
-          }
+      setTimePerQuestion(prev => {
+        const currentTime = prev[currentQuestionIndex]
+        if (currentTime <= 1) {
+          // Time ran out — handled below via separate effect
+          clearInterval(timer)
+          const updated = [...prev]
+          updated[currentQuestionIndex] = 0
+          return updated
         }
-        return prev - 1
+        const updated = [...prev]
+        updated[currentQuestionIndex] = currentTime - 1
+        return updated
       })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [currentQuestionIndex, isQuizComplete, totalQuestions, quizData.questions, battle.birdDefeated])
+  }, [currentQuestionIndex, isQuizComplete, battle.birdDefeated])
 
+  // Handle time-out (side effects kept outside state updater)
   useEffect(() => {
-    setTimeRemaining(currentQuestion?.timeLimit || 30)
-  }, [currentQuestionIndex, currentQuestion?.timeLimit])
+    if (isQuizComplete || battle.birdDefeated) return
+    if (timeRemaining > 0) return
+    if (isCurrentQuestionAnswered) return  // already answered — don't penalise
+
+    // Time ran out — count as wrong answer
+    battleActions.triggerWrongAnswer()
+
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+    } else {
+      setIsQuizComplete(true)
+    }
+  }, [timeRemaining, currentQuestionIndex, totalQuestions, isQuizComplete, battle.birdDefeated])
 
   // ─── ANSWER HANDLER (with battle trigger) ──────────────────
   const handleAnswerSelect = (optionIndex: number) => {
     if (isAnswerLocked || battle.birdDefeated) return
+    // Prevent re-answering already-answered questions
+    if (selectedAnswers[currentQuestionIndex] !== null) return
     
     const newAnswers = [...selectedAnswers]
     newAnswers[currentQuestionIndex] = optionIndex
     setSelectedAnswers(newAnswers)
 
-    const isCorrect = currentQuestion.options[optionIndex].isCorrect
+    const isCorrect = currentOptions[optionIndex].isCorrect
     
     // Lock answers and show result
     setIsAnswerLocked(true)
     setLastAnswerResult(isCorrect ? 'correct' : 'wrong')
     setLastAnswerIndex(optionIndex)
-    setAnsweredCount(prev => prev + 1)
 
     // Trigger battle animation
     if (isCorrect) {
@@ -250,7 +288,7 @@ const MultipleChoiceQuiz = () => {
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0 && !isAnswerLocked) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
+      setCurrentQuestionIndex(prev => prev - 1)
       setLastAnswerResult(null)
       setLastAnswerIndex(null)
     }
@@ -259,7 +297,7 @@ const MultipleChoiceQuiz = () => {
   const handleNext = () => {
     if (isAnswerLocked) return
     if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
+      setCurrentQuestionIndex(prev => prev + 1)
     } else {
       handleSubmitQuiz()
     }
@@ -269,21 +307,33 @@ const MultipleChoiceQuiz = () => {
     if (isQuizComplete) return
     setIsQuizComplete(true)
     
+    // Use ref to get the latest answers — avoids stale closure from setTimeout callers
+    const latestAnswers = selectedAnswersRef.current
+
     let correctCount = 0
-    quizData.questions.forEach((question, index) => {
-      if (selectedAnswers[index] !== null && question.options[selectedAnswers[index]!]?.isCorrect) {
+    shuffledOptions.forEach((options, index) => {
+      if (latestAnswers[index] !== null && options[latestAnswers[index]!]?.isCorrect) {
         correctCount++
       }
     })
 
     const accuracy = Math.round((correctCount / totalQuestions) * 100)
 
+    // Pass quizData with shuffled options so the review page indices match
+    const resultsQuizData = {
+      ...quizData,
+      questions: quizData.questions.map((q, i) => ({
+        ...q,
+        options: shuffledOptions[i]
+      }))
+    }
+
     const results: QuizResults = {
       totalQuestions,
       correctAnswers: correctCount,
       score: accuracy,
-      answers: selectedAnswers,
-      quizData
+      answers: latestAnswers,
+      quizData: resultsQuizData
     }
 
     // Save attempt to backend if quiz has a DB id
@@ -295,10 +345,10 @@ const MultipleChoiceQuiz = () => {
           correctAnswers: correctCount,
           accuracy,
           timeSpentSeconds: 0,
-          answers: selectedAnswers.map((ansIdx, qIdx) => ({
+          answers: latestAnswers.map((ansIdx, qIdx) => ({
             questionIndex: qIdx,
             userAnswer: ansIdx,
-            isCorrect: ansIdx !== null && quizData.questions[qIdx]?.options[ansIdx]?.isCorrect,
+            isCorrect: ansIdx !== null && shuffledOptions[qIdx]?.[ansIdx]?.isCorrect,
             timeSpentSeconds: 0,
           })),
         })
@@ -307,8 +357,8 @@ const MultipleChoiceQuiz = () => {
       }
     }
 
-    navigate('/quiz-results', { state: { results } })
-  }, [selectedAnswers, quizData, totalQuestions, navigate, isQuizComplete])
+    navigate('/quiz-results', { state: { results, originalQuizData: quizData } })
+  }, [quizData, shuffledOptions, totalQuestions, navigate, isQuizComplete])
 
   const handleLeaveQuiz = () => {
     setShowLeaveConfirm(true)
@@ -324,7 +374,7 @@ const MultipleChoiceQuiz = () => {
   const getOptionStyle = (index: number) => {
     const isSelected = selectedAnswers[currentQuestionIndex] === index
     const isShowingResult = lastAnswerResult !== null
-    const isCorrectOption = currentQuestion.options[index].isCorrect
+    const isCorrectOption = currentOptions[index].isCorrect
     const wasJustSelected = lastAnswerIndex === index
 
     if (isShowingResult && isCorrectOption) {
@@ -463,9 +513,12 @@ const MultipleChoiceQuiz = () => {
             <div className="text-left sm:text-right w-full sm:w-auto">
               <p className="text-white/80 text-sm font-medium tracking-wide font-body">Question</p>
               <p className="text-white text-2xl sm:text-3xl font-bold mt-1 font-display">
-                <span className="text-hive-purple-light">{answeredCount}</span>
+                <span className="text-hive-purple-light">{currentQuestionIndex + 1}</span>
                 <span className="text-white/40">/</span>
                 <span>{totalQuestions}</span>
+              </p>
+              <p className="text-white/50 text-xs font-body mt-1">
+                {answeredCount} answered
               </p>
             </div>
           </div>
@@ -529,14 +582,14 @@ const MultipleChoiceQuiz = () => {
         {/* Answer Options */}
         <div className="flex-shrink-0 flex justify-center px-4 sm:px-8 pb-6 sm:pb-8">
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {currentQuestion.options.map((option, index) => {
+          {currentOptions.map((option, index) => {
             const style = getOptionStyle(index)
             
             return (
               <button
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
-                disabled={isAnswerLocked || battle.birdDefeated}
+                disabled={isAnswerLocked || battle.birdDefeated || selectedAnswers[currentQuestionIndex] !== null}
                 className={`relative min-h-[92px] sm:min-h-[120px] py-5 sm:py-8 px-4 sm:px-8 rounded-2xl text-base sm:text-xl font-bold transition-all duration-300 
                           transform hover:scale-[1.02] overflow-hidden group font-body
                           text-white/90 hover:shadow-lg hover:shadow-hive-purple/10
@@ -553,10 +606,10 @@ const MultipleChoiceQuiz = () => {
                   <span className="relative z-10">{option.text}</span>
                   
                   {/* Correct/Wrong indicators */}
-                  {lastAnswerResult && currentQuestion.options[index].isCorrect && (
+                  {lastAnswerResult && currentOptions[index].isCorrect && (
                     <span className="absolute top-2 right-2 text-sm">✅</span>
                   )}
-                  {lastAnswerResult && lastAnswerIndex === index && !currentQuestion.options[index].isCorrect && (
+                  {lastAnswerResult && lastAnswerIndex === index && !currentOptions[index].isCorrect && (
                     <span className="absolute top-2 right-2 text-sm">❌</span>
                   )}
                 </button>

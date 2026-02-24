@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
-import { attemptsAPI } from '../services/api'
+import { attemptsAPI, quizAPI } from '../services/api'
 
 // Sample achievements data (keep until achievements are implemented in backend)
 const sampleAchievements = [
@@ -67,6 +67,48 @@ const ProfilePage = () => {
 
   const handleEditProfile = () => {
     navigate('/profile/edit')
+  }
+
+  const handleViewAttempt = async (test: any) => {
+    try {
+      const response = await quizAPI.getById(test.quizId)
+      if (!response.success) {
+        alert('Could not load this quiz. It may have been deleted.')
+        return
+      }
+
+      const quiz = (response.data as any).quiz
+
+      // Build originalQuizData in the format each quiz page expects (for retake)
+      let originalQuizData: any = null
+      if (test.quizType === 'multiple-choice') {
+        originalQuizData = { _id: quiz._id, title: quiz.title, questions: quiz.questions }
+      } else if (test.quizType === 'flashcard') {
+        originalQuizData = { _id: quiz._id, title: quiz.title, cards: quiz.flashcards, deckName: quiz.title }
+      } else if (test.quizType === 'matching') {
+        originalQuizData = {
+          _id: quiz._id, title: quiz.title,
+          pairs: quiz.matchingQuestions?.map((p: any, i: number) => ({ id: String(i + 1), left: p.left, right: p.right })),
+          timeLimit: quiz.timeLimit || 120, points: quiz.points || 10,
+        }
+      }
+
+      // Build results object from the stored attempt stats
+      const results = {
+        totalQuestions: test.totalQuestions,
+        correctAnswers: test.correctAnswers,
+        score: test.accuracy,
+        answers: Array(test.totalQuestions).fill(null),
+        quizData: { title: test.quizTitle, questions: quiz.questions || [] },
+      }
+
+      navigate('/quiz-results', {
+        state: { results, originalQuizData, quizType: test.quizType, fromHistory: true },
+      })
+    } catch (err) {
+      console.error('Failed to load quiz:', err)
+      alert('Could not load this quiz. It may have been deleted.')
+    }
   }
 
   // Slice history based on showAllHistory toggle
@@ -282,7 +324,7 @@ const ProfilePage = () => {
                     displayedHistory.map((test: any) => (
                       <div
                         key={test._id}
-                        onClick={() => console.log('View test:', test._id)}
+                        onClick={() => handleViewAttempt(test)}
                         className="flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
                                  hover:border-[#8b949e] transition-colors duration-200 cursor-pointer"
                       >

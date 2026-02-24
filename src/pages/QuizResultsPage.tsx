@@ -23,6 +23,9 @@ const QuizResultsPage = () => {
   const { fadeTo } = useRouteFade()
 
   const results: QuizResults | null = location.state?.results
+  const originalQuizData = location.state?.originalQuizData
+  const quizType: string = location.state?.quizType || 'multiple-choice'
+  const fromHistory: boolean = location.state?.fromHistory || false
 
   // If no results, redirect to home
   if (!results) {
@@ -148,56 +151,58 @@ const QuizResultsPage = () => {
             </div>
           </div>
 
-          {/* Answer Review */}
-          <div className="bg-dark-600/80 backdrop-blur-xl rounded-3xl border border-white/5 p-4 sm:p-8 mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 font-display">Answer Review</h2>
-            <div className="space-y-4">
-              {quizData.questions.map((question, index) => {
-                const userAnswerIndex = answers[index]
-                const userAnswer = userAnswerIndex !== null ? question.options[userAnswerIndex] : null
-                const correctOption = question.options.find(o => o.isCorrect)
-                const isCorrect = userAnswer?.isCorrect ?? false
+          {/* Answer Review — only shown when we have per-question answer data */}
+          {!fromHistory && quizData.questions.length > 0 && (
+            <div className="bg-dark-600/80 backdrop-blur-xl rounded-3xl border border-white/5 p-4 sm:p-8 mb-8">
+              <h2 className="text-xl font-bold text-white mb-6 font-display">Answer Review</h2>
+              <div className="space-y-4">
+                {quizData.questions.map((question, index) => {
+                  const userAnswerIndex = answers[index]
+                  const userAnswer = userAnswerIndex !== null ? question.options[userAnswerIndex] : null
+                  const correctOption = question.options.find(o => o.isCorrect)
+                  const isCorrect = userAnswer?.isCorrect ?? false
 
-                return (
-                  <div
-                    key={index}
-                    className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border ${
-                      isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
-                      isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
-                    }`}>
-                      {isCorrect ? (
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white/90 font-medium mb-2">
-                        {index + 1}. {question.questionText}
-                      </p>
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <span className="text-white/50">
-                          Your answer:{' '}
-                          <span className={userAnswer?.isCorrect ? 'text-green-400' : 'text-red-400'}>
-                            {userAnswer?.text || 'No answer'}
-                          </span>
-                        </span>
-                        {!isCorrect && (
-                          <span className="text-white/50">
-                            Correct answer:{' '}
-                            <span className="text-green-400">{correctOption?.text}</span>
-                          </span>
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border ${
+                        isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
+                        isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'
+                      }`}>
+                        {isCorrect ? (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-400" />
                         )}
                       </div>
+                      <div className="flex-1">
+                        <p className="text-white/90 font-medium mb-2">
+                          {index + 1}. {question.questionText}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <span className="text-white/50">
+                            Your answer:{' '}
+                            <span className={userAnswer?.isCorrect ? 'text-green-400' : 'text-red-400'}>
+                              {userAnswer?.text || 'No answer'}
+                            </span>
+                          </span>
+                          {!isCorrect && (
+                            <span className="text-white/50">
+                              Correct answer:{' '}
+                              <span className="text-green-400">{correctOption?.text}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
@@ -209,6 +214,21 @@ const QuizResultsPage = () => {
               <Home className="w-5 h-5" />
               Back to Home
             </button>
+            {originalQuizData && (
+              <button
+                onClick={() => {
+                  const route = quizType === 'flashcard' ? '/quiz/flashcard'
+                    : quizType === 'matching' ? '/quiz/matching'
+                    : '/quiz/multiple-choice'
+                  navigate(route, { state: { quizData: originalQuizData } })
+                }}
+                className="w-full sm:w-auto justify-center flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-dark-500/80 text-white rounded-xl
+                           hover:bg-dark-500 transition-all duration-300 border border-hive-purple/30 font-body"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Retake Quiz
+              </button>
+            )}
             <button
               onClick={() => fadeTo('/quiz/create')}
               className="w-full sm:w-auto justify-center flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-hive-purple text-white rounded-xl
