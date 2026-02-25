@@ -41,9 +41,8 @@ async function extractTextFromPDF(filePath) {
   ensurePdfJsPolyfills();
   const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-  // Vercel serverless bundles may not include pdf.worker.mjs.
-  // Force parsing on the main thread instead of spawning a worker.
-  GlobalWorkerOptions.workerSrc = '';
+  // Point to a worker file inside the repo so Vercel bundles it reliably.
+  GlobalWorkerOptions.workerSrc = new URL('../vendor/pdf.worker.mjs', import.meta.url).toString();
 
   const pdfBuffer = await fs.readFile(filePath);
   const uint8Array = new Uint8Array(pdfBuffer);
