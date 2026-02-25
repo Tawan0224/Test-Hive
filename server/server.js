@@ -42,6 +42,8 @@ connectDB().catch(err => {
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  // OAuth popups (Google/Microsoft) can interact more reliably with opener.
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 }));
 const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .split(',')
@@ -67,6 +69,27 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Ensure DB is connected before handling API requests (important for serverless cold starts).
+app.use(async (req, res, next) => {
+  if (req.path === '/' || req.path === '/api/health') {
+    return next();
+  }
+
+  try {
+    await connectDB();
+    return next();
+  } catch (error) {
+    console.error('Database unavailable during request:', error.message);
+    return res.status(503).json({
+      success: false,
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Database is unavailable. Please try again.',
+      },
+    });
+  }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

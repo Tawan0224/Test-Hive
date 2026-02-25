@@ -2,6 +2,20 @@ import User from '../models/User.js';
 import Achievement from '../models/Achievement.js';
 import { generateToken } from '../utils/generateToken.js';
 
+const getServerErrorStatus = (message = '') => {
+  if (message.includes('JWT_SECRET')) return 500;
+  if (
+    message.includes('buffering timed out')
+    || message.includes('ECONN')
+    || message.includes('Mongo')
+    || message.includes('MONGODB_URI')
+    || message.includes('topology')
+  ) {
+    return 503;
+  }
+  return 500;
+};
+
 // @desc    Register new user (email/password)
 // @route   POST /api/auth/signup
 // @access  Public
@@ -51,11 +65,7 @@ export const signup = async (req, res) => {
   } catch (error) {
     console.error('Signup error:', error.message, error);
     const message = error.message || 'Failed to create account';
-    const status = message.includes('JWT_SECRET')
-      ? 500
-      : message.includes('buffering timed out') || message.includes('ECONN')
-        ? 503
-        : 500;
+    const status = getServerErrorStatus(message);
     res.status(status).json({
       success: false,
       error: {
@@ -120,11 +130,7 @@ export const login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     const message = error.message || 'Failed to log in';
-    const status = message.includes('JWT_SECRET')
-      ? 500
-      : message.includes('buffering timed out') || message.includes('ECONN')
-        ? 503
-        : 500;
+    const status = getServerErrorStatus(message);
     res.status(status).json({
       success: false,
       error: {
@@ -350,11 +356,13 @@ export const googleAuth = async (req, res) => {
     });
   } catch (error) {
     console.error('Google auth error:', error);
-    res.status(500).json({
+    const message = error.message || 'Google authentication failed';
+    const status = getServerErrorStatus(message);
+    res.status(status).json({
       success: false,
       error: {
         code: 'OAUTH_FAILED',
-        message: 'Google authentication failed',
+        message: status === 503 ? 'Authentication service unavailable. Please try again.' : 'Google authentication failed',
       },
     });
   }
@@ -367,19 +375,33 @@ export const microsoftAuth = async (req, res) => {
   try {
     const { email, microsoftId, displayName, profilePicture } = req.body;
 
+    if (!email || !microsoftId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OAUTH_PAYLOAD',
+          message: 'Microsoft account data is incomplete. Please try again.',
+        },
+      });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedDisplayName = (displayName || normalizedEmail.split('@')[0] || 'user').trim();
+
     let user = await User.findOne({ authProviderId: microsoftId, authProvider: 'microsoft' });
 
     if (!user) {
-      const existingEmail = await User.findOne({ email });
+      const existingEmail = await User.findOne({ email: normalizedEmail });
       if (existingEmail) {
         // Link account: update to Microsoft provider and log them in
         user = existingEmail;
         user.authProvider = 'microsoft';
         user.authProviderId = microsoftId;
+        if (profilePicture) user.profilePicture = profilePicture;
         user.lastLogin = new Date();
         await user.save();
       } else {
-        const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+        const baseUsername = normalizedDisplayName.replace(/\s+/g, '').toLowerCase().slice(0, 20) || 'user';
         let username = baseUsername;
         let counter = 1;
         while (await User.findOne({ username })) {
@@ -388,9 +410,9 @@ export const microsoftAuth = async (req, res) => {
         }
 
         user = await User.create({
-          email,
+          email: normalizedEmail,
           username,
-          displayName,
+          displayName: normalizedDisplayName,
           profilePicture,
           authProvider: 'microsoft',
           authProviderId: microsoftId,
@@ -412,11 +434,13 @@ export const microsoftAuth = async (req, res) => {
     });
   } catch (error) {
     console.error('Microsoft auth error:', error);
-    res.status(500).json({
+    const message = error.message || 'Microsoft authentication failed';
+    const status = getServerErrorStatus(message);
+    res.status(status).json({
       success: false,
       error: {
         code: 'OAUTH_FAILED',
-        message: 'Microsoft authentication failed',
+        message: status === 503 ? 'Authentication service unavailable. Please try again.' : 'Microsoft authentication failed',
       },
     });
   }
@@ -429,10 +453,23 @@ export const facebookAuth = async (req, res) => {
   try {
     const { email, facebookId, displayName, profilePicture } = req.body;
 
+    if (!email || !facebookId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OAUTH_PAYLOAD',
+          message: 'Facebook account data is incomplete. Please try again.',
+        },
+      });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedDisplayName = (displayName || normalizedEmail.split('@')[0] || 'user').trim();
+
     let user = await User.findOne({ authProviderId: facebookId, authProvider: 'facebook' });
 
     if (!user) {
-      const existingEmail = await User.findOne({ email, authProvider: 'email' });
+      const existingEmail = await User.findOne({ email: normalizedEmail, authProvider: 'email' });
       if (existingEmail) {
         return res.status(400).json({
           success: false,
@@ -443,7 +480,7 @@ export const facebookAuth = async (req, res) => {
         });
       }
 
-      const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+      const baseUsername = normalizedDisplayName.replace(/\s+/g, '').toLowerCase().slice(0, 20) || 'user';
       let username = baseUsername;
       let counter = 1;
       while (await User.findOne({ username })) {
@@ -452,9 +489,9 @@ export const facebookAuth = async (req, res) => {
       }
 
       user = await User.create({
-        email,
+        email: normalizedEmail,
         username,
-        displayName,
+        displayName: normalizedDisplayName,
         profilePicture,
         authProvider: 'facebook',
         authProviderId: facebookId,
@@ -475,11 +512,13 @@ export const facebookAuth = async (req, res) => {
     });
   } catch (error) {
     console.error('Facebook auth error:', error);
-    res.status(500).json({
+    const message = error.message || 'Facebook authentication failed';
+    const status = getServerErrorStatus(message);
+    res.status(status).json({
       success: false,
       error: {
         code: 'OAUTH_FAILED',
-        message: 'Facebook authentication failed',
+        message: status === 503 ? 'Authentication service unavailable. Please try again.' : 'Facebook authentication failed',
       },
     });
   }
