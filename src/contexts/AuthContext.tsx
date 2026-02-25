@@ -1,7 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI } from '../services/api';
-import { useMsal } from '@azure/msal-react';
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { loginRequest } from '../config/msalConfig';
+
+/**
+ * Safe wrapper around useMsal() – returns a no-op instance object
+ * when <MsalProvider> is missing (e.g. MSAL init failed).
+ */
+function useMsalSafe() {
+  try {
+    return useMsal();
+  } catch {
+    return { instance: null as any };
+  }
+}
 
 interface User {
   _id: string;
@@ -43,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('testhive_token'));
   const [isLoading, setIsLoading] = useState(true);
-  const { instance: msalInstance } = useMsal();
+  const { instance: msalInstance } = useMsalSafe();
 
   // On mount, check if we have a saved token and fetch user data
   useEffect(() => {
