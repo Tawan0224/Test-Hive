@@ -39,12 +39,21 @@ function ensurePdfJsPolyfills() {
 
 async function extractTextFromPDF(filePath) {
   ensurePdfJsPolyfills();
-  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+  // Vercel serverless bundles may not include pdf.worker.mjs.
+  // Force parsing on the main thread instead of spawning a worker.
+  GlobalWorkerOptions.workerSrc = '';
 
   const pdfBuffer = await fs.readFile(filePath);
   const uint8Array = new Uint8Array(pdfBuffer);
   
-  const loadingTask = getDocument({ data: uint8Array, disableFontFace: true });
+  const loadingTask = getDocument({
+    data: uint8Array,
+    disableFontFace: true,
+    disableWorker: true,
+    useWorkerFetch: false,
+  });
   const pdfDoc = await loadingTask.promise;
   
   let fullText = '';
