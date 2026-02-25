@@ -6,7 +6,7 @@ import { authAPI } from '../services/api'
 
 const EditProfilePage = () => {
   const navigate = useNavigate()
-  const { user, isLoading: authLoading, isAuthenticated, updateUser } = useAuth()
+  const { user, isLoading: authLoading, updateUser } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Form state
@@ -32,13 +32,6 @@ const EditProfilePage = () => {
     new: false,
     confirm: false,
   })
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login')
-    }
-  }, [authLoading, isAuthenticated, navigate])
 
   // Populate form data from authenticated user
   useEffect(() => {

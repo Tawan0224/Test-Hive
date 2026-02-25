@@ -11,6 +11,7 @@ import MatchingQuiz from "./pages/MatchingQuiz";
 import FlashcardQuiz from "./pages/FlashcardQuiz";
 import QuizResultsPage from "./pages/QuizResultsPage";
 import { LoginPage, SignupPage } from "./pages/auth";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import { RouteFadeProvider, useRouteFade } from "./components/layout/RouteFadeProvider";
 
@@ -33,20 +34,20 @@ function AppRoutes() {
       <Route path="/signup" element={<SignupPage />} />
 
       {/* Main pages */}
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/profile/edit" element={<EditProfilePage />} />
+      <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 
       {/* Quiz generation */}
-      <Route path="/quiz/create" element={<AIGeneratePage />} />
+      <Route path="/quiz/create" element={<ProtectedRoute><AIGeneratePage /></ProtectedRoute>} />
 
       {/* Quiz taking */}
-      <Route path="/quiz/multiple-choice" element={<MultipleChoiceQuiz />} />
-      <Route path="/quiz/matching" element={<MatchingQuiz />} />
-      <Route path="/quiz/flashcard" element={<FlashcardQuiz />} />
-      
+      <Route path="/quiz/multiple-choice" element={<ProtectedRoute><MultipleChoiceQuiz /></ProtectedRoute>} />
+      <Route path="/quiz/matching" element={<ProtectedRoute><MatchingQuiz /></ProtectedRoute>} />
+      <Route path="/quiz/flashcard" element={<ProtectedRoute><FlashcardQuiz /></ProtectedRoute>} />
+
       {/* Quiz results */}
-      <Route path="/quiz-results" element={<QuizResultsPage />} />
+      <Route path="/quiz-results" element={<ProtectedRoute><QuizResultsPage /></ProtectedRoute>} />
 
       {/* 404 */}
       <Route path="*" element={
