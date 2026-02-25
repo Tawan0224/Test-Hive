@@ -148,116 +148,53 @@ export async function generateQuizFromPDF({ filePath, quizType, count, customIns
   else if (quizType === 'matching') prompt = buildMatchingPrompt(trimmedText, count, customInstructions);
   else throw new Error(`Unknown quiz type: ${quizType}`);
 
-  // Step 3: Try Claude (Anthropic) first, then fall back to OpenRouter free models
+  // Step 3: Call Claude (Anthropic)
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not set. Please configure your API key.');
+  }
+
+  // Pick model based on complexity:
+  // - Haiku: flashcards or 10-question quizzes — fast & cheap
+  // - Sonnet: 15 or 20 questions — good balance
+  // - Opus: only 20 questions with custom instructions (>50 chars)
+  let claudeModel = 'claude-sonnet-4-20250514';
+  if (quizType === 'flashcard' || count <= 10) {
+    claudeModel = 'claude-haiku-4-5-20251001';
+  } else if (count >= 20 && customInstructions && customInstructions.length > 50) {
+    claudeModel = 'claude-opus-4-20250514';
+  }
+
   let rawText = null;
-  let lastError = null;
 
-  // --- Try Claude first ---
-  if (process.env.ANTHROPIC_API_KEY) {
-    // Pick model based on complexity:
-    // - Haiku: flashcards or 10-question quizzes — fast & cheap
-    // - Sonnet: 15 or 20 questions — good balance
-    // - Opus: only 20 questions with custom instructions (>50 chars)
-    let claudeModel = 'claude-sonnet-4-20250514';
-    if (quizType === 'flashcard' || count <= 10) {
-      claudeModel = 'claude-haiku-4-5-20251001';
-    } else if (count >= 20 && customInstructions && customInstructions.length > 50) {
-      claudeModel = 'claude-opus-4-20250514';
-    }
+  console.log(`🤖 Calling Claude (${claudeModel})...`);
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: claudeModel,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
 
-    try {
-      console.log(`🤖 Trying Claude (${claudeModel})...`);
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: claudeModel,
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        rawText = data.content?.[0]?.text;
-        if (rawText) console.log('✅ Success with Claude');
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.warn('Claude failed:', errorData?.error?.message || response.status);
-        lastError = errorData?.error?.message || `HTTP ${response.status}`;
-      }
-    } catch (err) {
-      console.warn('Claude threw error:', err.message);
-      lastError = err.message;
-    }
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const msg = errorData?.error?.message || `HTTP ${response.status}`;
+    throw new Error(msg.includes('rate') ? 'rate limit' : msg);
   }
 
-  // --- Fall back to OpenRouter free models ---
-  if (!rawText) {
-    const FREE_MODELS = [
-      'openrouter/free',
-      'google/gemma-3-27b-it:free',
-      'deepseek/deepseek-r1-0528:free',
-      'mistralai/mistral-small-3.1-24b-instruct:free',
-      'meta-llama/llama-3.2-11b-vision-instruct:free',
-    ];
-
-    for (const model of FREE_MODELS) {
-      try {
-        console.log(`🤖 Trying model: ${model}`);
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:5001',
-            'X-Title': 'TestHive',
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: 'user', content: prompt }],
-          }),
-        });
-
-        if (response.status === 401) {
-          throw new Error('API key');
-        }
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.warn(`Model ${model} failed:`, errorData?.error?.message || response.status);
-          lastError = errorData?.error?.message || `HTTP ${response.status}`;
-          continue;
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          console.warn(`Model ${model} returned error in body:`, data.error?.message || data.error);
-          lastError = data.error?.message || 'Provider error';
-          continue;
-        }
-
-        rawText = data.choices?.[0]?.message?.content;
-        if (rawText) {
-          console.log(`✅ Success with model: ${model}`);
-          break;
-        }
-      } catch (err) {
-        if (err.message === 'API key') throw err;
-        console.warn(`Model ${model} threw error:`, err.message);
-        lastError = err.message;
-      }
-    }
-  }
+  const data = await response.json();
+  rawText = data.content?.[0]?.text;
 
   if (!rawText) {
-    throw new Error(lastError?.includes('rate') ? 'rate limit' : (lastError || 'All AI models are currently unavailable. Please try again in a moment.'));
+    throw new Error('Claude returned an empty response. Please try again.');
   }
+
+  console.log('✅ Success with Claude');
 
   const cleaned = rawText
     .replace(/^```json\s*/i, '')
