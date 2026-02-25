@@ -51,6 +51,15 @@ app.use('/api/attempts', attemptRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/achievements', achievementRoutes);
 
+// Root route (useful for Vercel/browser checks)
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TestHive API is running',
+    health: '/api/health',
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'TestHive API is running' });
