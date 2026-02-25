@@ -22,7 +22,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
-connectDB();
+connectDB().catch(err => {
+  console.error('❌ Failed to connect to MongoDB on startup:', err.message);
+});
 
 // Middleware
 app.use(helmet({
