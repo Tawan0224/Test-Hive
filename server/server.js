@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.js';
 import quizRoutes from './src/routes/quiz.js';
@@ -20,6 +21,12 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const ENTRY_FILE = fileURLToPath(import.meta.url);
+const IS_DIRECT_RUN = process.argv[1] === ENTRY_FILE;
+const IS_SERVERLESS =
+  process.env.VERCEL === '1' ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.NETLIFY;
 
 // Connect to MongoDB
 connectDB().catch(err => {
@@ -76,8 +83,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server only in non-serverless environments (local dev)
-if (process.env.VERCEL !== '1') {
+// Start server only when run directly in local/dev environments.
+if (IS_DIRECT_RUN && !IS_SERVERLESS) {
   app.listen(PORT, () => {
     console.log(`🐝 TestHive server running on port ${PORT}`);
   });

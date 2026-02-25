@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import Quiz from '../models/Quiz.js';
-import { generateQuizFromPDF } from '../services/aiService.js';
 
 // ────────────────────────────────────────────
 // @desc    Generate a quiz from an uploaded PDF using AI
@@ -37,7 +36,10 @@ export const generateQuiz = async (req, res) => {
       });
     }
 
-    // Call Ai
+    // Lazy-load AI service so API boot doesn't fail if PDF/AI deps are unavailable.
+    const { generateQuizFromPDF } = await import('../services/aiService.js');
+
+    // Call AI
     const generated = await generateQuizFromPDF({
       filePath,
       quizType,
@@ -117,7 +119,7 @@ export const generateQuiz = async (req, res) => {
     if (error.message?.includes('API key')) {
       return res.status(500).json({
         success: false,
-        error: { code: 'AI_AUTH', message: 'Invalid OpenRouter API key. Check your .env file.' },
+        error: { code: 'AI_AUTH', message: 'Invalid Anthropic API key. Check your environment variables.' },
       });
     }
 
