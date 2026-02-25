@@ -28,22 +28,31 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [activeLoginMethod, setActiveLoginMethod] = useState<'email' | 'google' | 'microsoft' | null>(null)
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
+  const isLoading = activeLoginMethod !== null
 
   const handleGoogleLogin = useGoogleLogin({
     scope: 'openid email profile',
     onSuccess: async (tokenResponse) => {
       setError('')
-      const result = await googleAuth(tokenResponse.access_token)
-      if (result.success) {
-        navigate('/home')
-      } else if (result.error) {
-        setError(result.error)
+      setActiveLoginMethod('google')
+      try {
+        const result = await googleAuth(tokenResponse.access_token)
+        if (result.success) {
+          navigate('/home')
+        } else if (result.error) {
+          setError(result.error)
+        }
+      } finally {
+        setActiveLoginMethod(null)
       }
     },
-    onError: () => setError('Google login failed'),
+    onError: () => {
+      setActiveLoginMethod(null)
+      setError('Google login failed')
+    },
   })
 
   // Generate static star positions on mount
@@ -61,17 +70,34 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setIsLoading(true)
+    setActiveLoginMethod('email')
 
-    const result = await login(email, password)
+    try {
+      const result = await login(email, password)
 
-    if (result.success) {
-      navigate('/home')
-    } else {
-      setError(result.error || 'Login failed')
+      if (result.success) {
+        navigate('/home')
+      } else {
+        setError(result.error || 'Login failed')
+      }
+    } finally {
+      setActiveLoginMethod(null)
     }
+  }
 
-    setIsLoading(false)
+  const handleMicrosoftLogin = async () => {
+    setError('')
+    setActiveLoginMethod('microsoft')
+    try {
+      const result = await microsoftLogin()
+      if (result.success) {
+        navigate('/home')
+      } else if (result.error) {
+        setError(result.error)
+      }
+    } finally {
+      setActiveLoginMethod(null)
+    }
   }
 
   return (
@@ -181,11 +207,12 @@ const LoginPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField(null)}
+                  disabled={isLoading}
                   placeholder="Enter your email"
                   className="relative w-full px-4 py-3.5 bg-[#1a1a2e]/80 border-2 border-purple-500/50 rounded-lg
                            text-white placeholder-white/30 outline-none
                            focus:border-purple-500 focus:bg-[#1a1a2e]
-                           transition-all duration-300"
+                           transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -213,16 +240,18 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField(null)}
+                  disabled={isLoading}
                   placeholder="Enter your password"
                   className="relative w-full px-4 py-3.5 bg-[#1a1a2e]/80 border border-white/10 rounded-lg
                            text-white placeholder-white/30 outline-none
                            focus:border-blue-500/50 focus:bg-[#1a1a2e]
-                           transition-all duration-300 pr-12"
+                           transition-all duration-300 pr-12 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <button
                   type="button"
+                  disabled={isLoading}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-blue-400 transition-all duration-300 hover:scale-110"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-blue-400 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -247,7 +276,7 @@ const LoginPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Logging in...
+                    {activeLoginMethod === 'email' ? 'Logging in...' : 'Authenticating...'}
                   </>
                 ) : (
                   'Log In'
@@ -267,31 +296,53 @@ const LoginPage = () => {
           <div className="flex gap-3 relative">
             <button
               type="button"
-              onClick={() => handleGoogleLogin()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-lg
-                       text-white/80 font-medium hover:bg-white/10 hover:border-white/20
-                       transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <GoogleIcon />
-              Google
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
+              disabled={isLoading}
+              onClick={() => {
                 setError('')
-                const result = await microsoftLogin()
-                if (result.success) {
-                  navigate('/home')
-                } else if (result.error) {
-                  setError(result.error)
-                }
+                setActiveLoginMethod('google')
+                handleGoogleLogin()
               }}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-lg
                        text-white/80 font-medium hover:bg-white/10 hover:border-white/20
-                       transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                       transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <MicrosoftIcon />
-              Microsoft
+              {activeLoginMethod === 'google' ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <GoogleIcon />
+                  Google
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={handleMicrosoftLogin}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-lg
+                       text-white/80 font-medium hover:bg-white/10 hover:border-white/20
+                       transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {activeLoginMethod === 'microsoft' ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <MicrosoftIcon />
+                  Microsoft
+                </>
+              )}
             </button>
           </div>
 
