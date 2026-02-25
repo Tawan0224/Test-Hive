@@ -1,11 +1,46 @@
 import fs from 'fs/promises';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// pdfjs-dist expects some browser geometry globals that are missing in Node serverless runtimes.
+function ensurePdfJsPolyfills() {
+  if (typeof globalThis.DOMMatrix === 'undefined') {
+    globalThis.DOMMatrix = class DOMMatrix {
+      constructor() {
+        this.a = 1; this.b = 0; this.c = 0;
+        this.d = 1; this.e = 0; this.f = 0;
+      }
+      multiplySelf() { return this; }
+      preMultiplySelf() { return this; }
+      translateSelf() { return this; }
+      scaleSelf() { return this; }
+      rotateSelf() { return this; }
+      invertSelf() { return this; }
+    };
+  }
+
+  if (typeof globalThis.ImageData === 'undefined') {
+    globalThis.ImageData = class ImageData {
+      constructor(data = null, width = 0, height = 0) {
+        this.data = data;
+        this.width = width;
+        this.height = height;
+      }
+    };
+  }
+
+  if (typeof globalThis.Path2D === 'undefined') {
+    globalThis.Path2D = class Path2D {
+      constructor() {}
+    };
+  }
+}
 
 // ─────────────────────────────────────────────
 // Extract text from PDF using pdfjs-dist
 // ─────────────────────────────────────────────
 
 async function extractTextFromPDF(filePath) {
+  ensurePdfJsPolyfills();
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
   const pdfBuffer = await fs.readFile(filePath);
   const uint8Array = new Uint8Array(pdfBuffer);
   
