@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import Quiz from '../models/Quiz.js';
 import { generateQuizFromPDF } from '../services/aiService.js';
 
@@ -134,8 +134,8 @@ export const generateQuiz = async (req, res) => {
     });
   } finally {
     // Always clean up the uploaded temp file
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (filePath) {
+      await fs.unlink(filePath).catch(() => {});
     }
   }
 };

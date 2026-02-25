@@ -3,6 +3,38 @@ import QuizAttempt from '../models/QuizAttempt.js';
 import User from '../models/User.js';
 import Achievement from '../models/Achievement.js';
 
+// Strip correct answer data from quiz so non-creators can't cheat
+function stripCorrectAnswers(quiz) {
+  const obj = quiz.toObject ? quiz.toObject() : { ...quiz };
+
+  // Strip isCorrect from multiple-choice options
+  if (obj.questions) {
+    obj.questions = obj.questions.map(q => ({
+      ...q,
+      options: (q.options || []).map(({ text }) => ({ text })),
+    }));
+  }
+
+  // Shuffle right-side of matching pairs so order doesn't reveal answers
+  if (obj.matchingQuestions) {
+    obj.matchingQuestions = obj.matchingQuestions.map(mq => {
+      const shuffledPairs = [...(mq.pairs || [])];
+      // Shuffle the right values independently
+      const rights = shuffledPairs.map(p => p.right);
+      for (let i = rights.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rights[i], rights[j]] = [rights[j], rights[i]];
+      }
+      return {
+        ...mq,
+        pairs: shuffledPairs.map((p, idx) => ({ left: p.left, right: rights[idx] })),
+      };
+    });
+  }
+
+  return obj;
+}
+
 // ────────────────────────────────────────────
 // @desc    Create a new quiz
 // @route   POST /api/quizzes
@@ -119,9 +151,12 @@ export const getQuizById = async (req, res) => {
       });
     }
 
+    // Strip correct answers for non-creators so they can't cheat
+    const safeQuiz = isCreator ? quiz : stripCorrectAnswers(quiz);
+
     res.json({
       success: true,
-      data: { quiz },
+      data: { quiz: safeQuiz },
     });
   } catch (error) {
     console.error('Get quiz error:', error);
@@ -150,9 +185,12 @@ export const getQuizByShareCode = async (req, res) => {
       });
     }
 
+    // Strip correct answers so quiz takers can't cheat
+    const safeQuiz = stripCorrectAnswers(quiz);
+
     res.json({
       success: true,
-      data: { quiz },
+      data: { quiz: safeQuiz },
     });
   } catch (error) {
     console.error('Get quiz by share code error:', error);

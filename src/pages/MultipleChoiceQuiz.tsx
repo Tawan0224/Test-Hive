@@ -198,115 +198,11 @@ const MultipleChoiceQuiz = () => {
   const currentQuestion = quizData.questions[currentQuestionIndex]
   const currentOptions = shuffledOptions[currentQuestionIndex]
 
-  // ─── AUTO-END QUIZ WHEN BIRD HP REACHES 0 ─────────────────────
-  useEffect(() => {
-    if (battle.birdDefeated && !isQuizComplete) {
-      // Bird (player) is defeated — auto-submit after a short delay for the animation to play
-      const timeout = setTimeout(() => {
-        handleSubmitQuiz()
-      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
-      return () => clearTimeout(timeout)
-    }
-  }, [battle.birdDefeated, isQuizComplete])
-
-  // Timer — decrements the current question's time each second (paused for answered questions)
-  useEffect(() => {
-    if (isQuizComplete || battle.birdDefeated || isCurrentQuestionAnswered) return
-
-    const timer = setInterval(() => {
-      setTimePerQuestion(prev => {
-        const currentTime = prev[currentQuestionIndex]
-        if (currentTime <= 1) {
-          // Time ran out — handled below via separate effect
-          clearInterval(timer)
-          const updated = [...prev]
-          updated[currentQuestionIndex] = 0
-          return updated
-        }
-        const updated = [...prev]
-        updated[currentQuestionIndex] = currentTime - 1
-        return updated
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [currentQuestionIndex, isQuizComplete, battle.birdDefeated])
-
-  // Handle time-out (side effects kept outside state updater)
-  useEffect(() => {
-    if (isQuizComplete || battle.birdDefeated) return
-    if (timeRemaining > 0) return
-    if (isCurrentQuestionAnswered) return  // already answered — don't penalise
-
-    // Time ran out — count as wrong answer
-    battleActions.triggerWrongAnswer()
-
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1)
-    } else {
-      setIsQuizComplete(true)
-    }
-  }, [timeRemaining, currentQuestionIndex, totalQuestions, isQuizComplete, battle.birdDefeated])
-
-  // ─── ANSWER HANDLER (with battle trigger) ──────────────────
-  const handleAnswerSelect = (optionIndex: number) => {
-    if (isAnswerLocked || battle.birdDefeated) return
-    // Prevent re-answering already-answered questions
-    if (selectedAnswers[currentQuestionIndex] !== null) return
-    
-    const newAnswers = [...selectedAnswers]
-    newAnswers[currentQuestionIndex] = optionIndex
-    setSelectedAnswers(newAnswers)
-
-    const isCorrect = currentOptions[optionIndex].isCorrect
-    
-    // Lock answers and show result
-    setIsAnswerLocked(true)
-    setLastAnswerResult(isCorrect ? 'correct' : 'wrong')
-    setLastAnswerIndex(optionIndex)
-
-    // Trigger battle animation
-    if (isCorrect) {
-      battleActions.triggerCorrectAnswer()
-    } else {
-      battleActions.triggerWrongAnswer()
-    }
-
-    // Auto-advance after animation (unless bird is defeated — that's handled by the useEffect above)
-    setTimeout(() => {
-      setLastAnswerResult(null)
-      setLastAnswerIndex(null)
-      setIsAnswerLocked(false)
-
-      if (currentQuestionIndex < totalQuestions - 1) {
-        setCurrentQuestionIndex(prev => prev + 1)
-      } else {
-        handleSubmitQuiz()
-      }
-    }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
-  }
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0 && !isAnswerLocked) {
-      setCurrentQuestionIndex(prev => prev - 1)
-      setLastAnswerResult(null)
-      setLastAnswerIndex(null)
-    }
-  }
-
-  const handleNext = () => {
-    if (isAnswerLocked) return
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1)
-    } else {
-      handleSubmitQuiz()
-    }
-  }
-
+  // ─── SUBMIT HANDLER (declared before useEffects that reference it) ───
   const handleSubmitQuiz = useCallback(async () => {
     if (isQuizComplete) return
     setIsQuizComplete(true)
-    
+
     // Use ref to get the latest answers — avoids stale closure from setTimeout callers
     const latestAnswers = selectedAnswersRef.current
 
@@ -359,6 +255,105 @@ const MultipleChoiceQuiz = () => {
 
     navigate('/quiz-results', { state: { results, originalQuizData: quizData } })
   }, [quizData, shuffledOptions, totalQuestions, navigate, isQuizComplete])
+
+  // ─── AUTO-END QUIZ WHEN BIRD HP REACHES 0 ─────────────────────
+  useEffect(() => {
+    if (battle.birdDefeated && !isQuizComplete) {
+      const timeout = setTimeout(() => {
+        handleSubmitQuiz()
+      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
+      return () => clearTimeout(timeout)
+    }
+  }, [battle.birdDefeated, isQuizComplete, handleSubmitQuiz])
+
+  // Timer — decrements the current question's time each second (paused for answered questions)
+  useEffect(() => {
+    if (isQuizComplete || battle.birdDefeated || isCurrentQuestionAnswered) return
+
+    const timer = setInterval(() => {
+      setTimePerQuestion(prev => {
+        const currentTime = prev[currentQuestionIndex]
+        if (currentTime <= 1) {
+          clearInterval(timer)
+          const updated = [...prev]
+          updated[currentQuestionIndex] = 0
+          return updated
+        }
+        const updated = [...prev]
+        updated[currentQuestionIndex] = currentTime - 1
+        return updated
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [currentQuestionIndex, isQuizComplete, battle.birdDefeated, isCurrentQuestionAnswered])
+
+  // Handle time-out (side effects kept outside state updater)
+  useEffect(() => {
+    if (isQuizComplete || battle.birdDefeated) return
+    if (timeRemaining > 0) return
+    if (isCurrentQuestionAnswered) return
+
+    battleActions.triggerWrongAnswer()
+
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+    } else {
+      setIsQuizComplete(true)
+    }
+  }, [timeRemaining, currentQuestionIndex, totalQuestions, isQuizComplete, battle.birdDefeated])
+
+  // ─── ANSWER HANDLER (with battle trigger) ──────────────────
+  const handleAnswerSelect = (optionIndex: number) => {
+    if (isAnswerLocked || battle.birdDefeated) return
+    if (selectedAnswers[currentQuestionIndex] !== null) return
+
+    const newAnswers = [...selectedAnswers]
+    newAnswers[currentQuestionIndex] = optionIndex
+    setSelectedAnswers(newAnswers)
+
+    const isCorrect = currentOptions[optionIndex].isCorrect
+
+    setIsAnswerLocked(true)
+    setLastAnswerResult(isCorrect ? 'correct' : 'wrong')
+    setLastAnswerIndex(optionIndex)
+
+    if (isCorrect) {
+      battleActions.triggerCorrectAnswer()
+    } else {
+      battleActions.triggerWrongAnswer()
+    }
+
+    // Auto-advance after animation
+    setTimeout(() => {
+      setLastAnswerResult(null)
+      setLastAnswerIndex(null)
+      setIsAnswerLocked(false)
+
+      if (currentQuestionIndex < totalQuestions - 1) {
+        setCurrentQuestionIndex(prev => prev + 1)
+      } else {
+        handleSubmitQuiz()
+      }
+    }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
+  }
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0 && !isAnswerLocked) {
+      setCurrentQuestionIndex(prev => prev - 1)
+      setLastAnswerResult(null)
+      setLastAnswerIndex(null)
+    }
+  }
+
+  const handleNext = () => {
+    if (isAnswerLocked) return
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(prev => prev + 1)
+    } else {
+      handleSubmitQuiz()
+    }
+  }
 
   const handleLeaveQuiz = () => {
     setShowLeaveConfirm(true)

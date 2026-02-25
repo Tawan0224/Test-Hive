@@ -81,47 +81,12 @@ const MatchingQuiz = () => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const [battle, battleActions] = useBattleSystem(quizData.pairs.length)
+  const hasSubmittedRef = useRef(false)
 
   useEffect(() => {
     setShuffledLeft(shuffleArray([...quizData.pairs]))
     setShuffledRight(shuffleArray([...quizData.pairs]))
   }, [quizData.pairs])
-
-  // Auto-end when bird HP reaches 0
-  useEffect(() => {
-    if (battle.birdDefeated && !isComplete) {
-      const timeout = setTimeout(() => {
-        setIsComplete(true)
-        handleComplete()
-      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
-      return () => clearTimeout(timeout)
-    }
-  }, [battle.birdDefeated, isComplete])
-
-  // Timer
-  useEffect(() => {
-    if (isComplete || timeRemaining <= 0) return
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) { setIsComplete(true); return 0 }
-        return prev - 1
-      })
-    }, 1000)
-      return () => clearInterval(timer)
-    }, [isComplete, timeRemaining])
-  // When timer hits 0, trigger results (only if not already ended by bird defeat or manual submit)
-  useEffect(() => {
-    if (timeRemaining === 0 && isComplete && !battle.birdDefeated) {
-      handleComplete()
-    }
-  }, [timeRemaining, isComplete])
-
-  // Auto-complete when all pairs matched
-  useEffect(() => {
-    if (quizData.pairs.length > 0 && matchedPairIds.size === quizData.pairs.length) {
-      setIsComplete(true)
-    }
-  }, [matchedPairIds.size, quizData.pairs.length])
 
   // Draw SVG connection lines for matched pairs
   const updateConnectionLines = useCallback(() => {
@@ -130,7 +95,6 @@ const MatchingQuiz = () => {
     const lines: typeof connectionLines = []
 
     matchedPairIds.forEach((pairId) => {
-      // Left item ref key = pairId, right item ref key = pairId (same pair)
       const leftEl = leftItemRefs.current.get(pairId)
       const rightEl = rightItemRefs.current.get(pairId)
       if (leftEl && rightEl) {
@@ -155,21 +119,14 @@ const MatchingQuiz = () => {
   }, [updateConnectionLines])
 
   // ─── MATCH ATTEMPT ────────────────────────────────────────────
-  // Called when both a left and right item are selected.
-  // leftId = the pair.id of the selected LEFT item
-  // rightId = the pair.id of the selected RIGHT item
-  // A correct match means leftId === rightId (same pair)
   const attemptMatch = useCallback((leftId: string, rightId: string) => {
-    // Clear selections immediately
     setSelectedLeftId(null)
     setSelectedRightId(null)
 
     if (leftId === rightId) {
-      // ✅ CORRECT — same pair id means left term matches right definition
       setMatchedPairIds(prev => new Set([...prev, leftId]))
       battleActions.triggerCorrectAnswer()
     } else {
-      // ❌ WRONG — flash both items red briefly
       setWrongFlashLeftId(leftId)
       setWrongFlashRightId(rightId)
       setTimeout(() => {
@@ -182,47 +139,25 @@ const MatchingQuiz = () => {
 
   // ─── LEFT CLICK ───────────────────────────────────────────────
   const handleLeftClick = (pair: MatchingPair) => {
-    // Ignore if already correctly matched or game over
     if (isComplete || matchedPairIds.has(pair.id) || battle.birdDefeated) return
-
-    // Clicking same selected item = deselect
-    if (selectedLeftId === pair.id) {
-      setSelectedLeftId(null)
-      return
-    }
-
-    // If a right item is already selected, attempt the match now
-    if (selectedRightId !== null) {
-      attemptMatch(pair.id, selectedRightId)
-      return
-    }
-
-    // Otherwise just select this left item
+    if (selectedLeftId === pair.id) { setSelectedLeftId(null); return }
+    if (selectedRightId !== null) { attemptMatch(pair.id, selectedRightId); return }
     setSelectedLeftId(pair.id)
   }
 
   // ─── RIGHT CLICK ──────────────────────────────────────────────
   const handleRightClick = (pair: MatchingPair) => {
-    // Ignore if already correctly matched or game over
     if (isComplete || matchedPairIds.has(pair.id) || battle.birdDefeated) return
-
-    // Clicking same selected item = deselect
-    if (selectedRightId === pair.id) {
-      setSelectedRightId(null)
-      return
-    }
-
-    // If a left item is already selected, attempt the match now
-    if (selectedLeftId !== null) {
-      attemptMatch(selectedLeftId, pair.id)
-      return
-    }
-
-    // Otherwise just select this right item
+    if (selectedRightId === pair.id) { setSelectedRightId(null); return }
+    if (selectedLeftId !== null) { attemptMatch(selectedLeftId, pair.id); return }
     setSelectedRightId(pair.id)
   }
 
+  // ─── HANDLE COMPLETE (with double-submit guard) ───────────────
   const handleComplete = useCallback(async () => {
+    if (hasSubmittedRef.current) return
+    hasSubmittedRef.current = true
+
     const accuracy = Math.round((matchedPairIds.size / quizData.pairs.length) * 100)
 
     if (quizData._id) {
@@ -245,7 +180,7 @@ const MatchingQuiz = () => {
           totalQuestions: quizData.pairs.length,
           correctAnswers: matchedPairIds.size,
           score: accuracy,
-          answers: quizData.pairs.map((_, i) => matchedPairIds.has(String(i + 1)) ? 0 : null),
+          answers: quizData.pairs.map(p => matchedPairIds.has(p.id) ? 0 : null),
           quizData: {
             title: quizData.title,
             questions: quizData.pairs.map(p => ({
@@ -258,7 +193,46 @@ const MatchingQuiz = () => {
         quizType: 'matching',
       }
     })
-  }, [matchedPairIds.size, navigate, quizData, timeRemaining])
+  }, [matchedPairIds, navigate, quizData, timeRemaining])
+
+  // Auto-end when bird HP reaches 0
+  useEffect(() => {
+    if (battle.birdDefeated && !isComplete) {
+      const timeout = setTimeout(() => {
+        setIsComplete(true)
+        handleComplete()
+      }, BATTLE_CONFIG.NEXT_QUESTION_DELAY)
+      return () => clearTimeout(timeout)
+    }
+  }, [battle.birdDefeated, isComplete, handleComplete])
+
+  // Timer
+  useEffect(() => {
+    if (isComplete || timeRemaining <= 0) return
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) return 0
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [isComplete, timeRemaining])
+
+  // When timer hits 0, trigger completion
+  useEffect(() => {
+    if (timeRemaining === 0 && !isComplete) {
+      setIsComplete(true)
+      handleComplete()
+    }
+  }, [timeRemaining, isComplete, handleComplete])
+
+  // Auto-complete when all pairs matched
+  useEffect(() => {
+    if (quizData.pairs.length > 0 && matchedPairIds.size === quizData.pairs.length) {
+      setIsComplete(true)
+      handleComplete()
+    }
+  }, [matchedPairIds.size, quizData.pairs.length, handleComplete])
 
   const handleSubmit = () => { setIsComplete(true); handleComplete() }
   const handleLeaveQuiz = () => setShowLeaveConfirm(true)

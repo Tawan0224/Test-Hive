@@ -145,55 +145,52 @@ const EditProfilePage = () => {
   // Handle form submission - calls real API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
 
     setIsLoading(true)
     setErrors({})
 
-    const response = await authAPI.updateProfile({
-      displayName: formData.displayName.trim(),
-      username: formData.username.trim(),
-      email: formData.email.trim(),
-    })
+    try {
+      const response = await authAPI.updateProfile({
+        displayName: formData.displayName.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+      })
 
-    setIsLoading(false)
-
-    if (response.success && response.data) {
-      // Update user in AuthContext so profile page shows new data immediately
-      updateUser((response.data as any).user)
-      // Navigate back to profile page
-      navigate('/profile')
-    } else {
-      // Show error from server
-      const errorMessage = response.error?.message || 'Failed to update profile'
-      const errorCode = response.error?.code
-
-      // Map specific errors to form fields
-      if (errorCode === 'USERNAME_EXISTS') {
-        setErrors({ username: errorMessage })
-      } else if (errorCode === 'EMAIL_EXISTS') {
-        setErrors({ email: errorMessage })
+      if (response.success && response.data) {
+        // Update user in AuthContext so profile page shows new data immediately
+        updateUser((response.data as any).user)
+        // Navigate back to profile page
+        navigate('/profile')
       } else {
-        setErrors({ general: errorMessage })
+        // Show error from server
+        const errorMessage = response.error?.message || 'Failed to update profile'
+        const errorCode = response.error?.code
+
+        // Map specific errors to form fields
+        if (errorCode === 'USERNAME_EXISTS') {
+          setErrors({ username: errorMessage })
+        } else if (errorCode === 'EMAIL_EXISTS') {
+          setErrors({ email: errorMessage })
+        } else {
+          setErrors({ general: errorMessage })
+        }
       }
+    } catch {
+      setErrors({ general: 'Network error. Please try again.' })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   // Handle password change submission
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validatePassword()) return
 
-    setIsLoading(true)
-    
-    // TODO: Implement API call to change password
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setIsLoading(false)
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    setShowPasswordSection(false)
+    setErrors({ general: 'Password change is not yet available. Coming soon!' })
   }
 
   // Handle cancel

@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // ─────────────────────────────────────────────
@@ -6,7 +6,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 // ─────────────────────────────────────────────
 
 async function extractTextFromPDF(filePath) {
-  const pdfBuffer = fs.readFileSync(filePath);
+  const pdfBuffer = await fs.readFile(filePath);
   const uint8Array = new Uint8Array(pdfBuffer);
   
   const loadingTask = getDocument({ data: uint8Array, disableFontFace: true });

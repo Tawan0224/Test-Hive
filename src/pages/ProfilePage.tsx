@@ -146,6 +146,13 @@ const ProfilePage = () => {
       .slice(0, 2)
   }
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login')
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
   // Show loading state while auth is being checked
   if (isLoading || !user) {
     return (
