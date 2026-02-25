@@ -117,12 +117,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
+      if (!res.ok) {
+        return { success: false, error: 'Unable to fetch Google profile. Please try again.' };
+      }
       const profile = await res.json();
+      if (!profile?.email || !profile?.sub) {
+        return { success: false, error: 'Google did not return your email. Reconnect and allow email access.' };
+      }
 
       const response = await authAPI.googleAuth({
         email: profile.email,
         googleId: profile.sub,
-        displayName: profile.name,
+        displayName: profile.name || profile.email.split('@')[0],
         profilePicture: profile.picture || '',
       });
 

@@ -34,6 +34,7 @@ const SignupPage = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
   const handleGoogleLogin = useGoogleLogin({
+    scope: 'openid email profile',
     onSuccess: async (tokenResponse) => {
       setError('')
       const result = await googleAuth(tokenResponse.access_token)

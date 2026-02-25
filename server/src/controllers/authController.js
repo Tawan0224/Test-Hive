@@ -279,10 +279,23 @@ export const googleAuth = async (req, res) => {
   try {
     const { email, googleId, displayName, profilePicture } = req.body;
 
+    if (!email || !googleId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OAUTH_PAYLOAD',
+          message: 'Google account data is incomplete. Please grant email permission and try again.',
+        },
+      });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedDisplayName = (displayName || normalizedEmail.split('@')[0] || 'user').trim();
+
     let user = await User.findOne({ authProviderId: googleId, authProvider: 'google' });
 
     if (!user) {
-      const existingEmail = await User.findOne({ email });
+      const existingEmail = await User.findOne({ email: normalizedEmail });
       if (existingEmail) {
         // Link account: update to Google provider and log them in
         user = existingEmail;
@@ -292,7 +305,7 @@ export const googleAuth = async (req, res) => {
         user.lastLogin = new Date();
         await user.save();
       } else {
-        const baseUsername = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+        const baseUsername = normalizedDisplayName.replace(/\s+/g, '').toLowerCase().slice(0, 20) || 'user';
         let username = baseUsername;
         let counter = 1;
         while (await User.findOne({ username })) {
@@ -301,9 +314,9 @@ export const googleAuth = async (req, res) => {
         }
 
         user = await User.create({
-          email,
+          email: normalizedEmail,
           username,
-          displayName,
+          displayName: normalizedDisplayName,
           profilePicture,
           authProvider: 'google',
           authProviderId: googleId,
