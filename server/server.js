@@ -74,6 +74,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🐝 TestHive server running on port ${PORT}`);
-});
+// Start server only in non-serverless environments (local dev)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`🐝 TestHive server running on port ${PORT}`);
+  });
+}
+
+export default app;
