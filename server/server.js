@@ -28,6 +28,11 @@ const IS_SERVERLESS =
   process.env.AWS_LAMBDA_FUNCTION_NAME ||
   process.env.NETLIFY;
 
+// Required behind reverse proxies (Vercel/Netlify) so rate limiting uses real client IP.
+if (IS_SERVERLESS) {
+  app.set('trust proxy', 1);
+}
+
 // Connect to MongoDB
 connectDB().catch(err => {
   console.error('❌ Failed to connect to MongoDB on startup:', err.message);
