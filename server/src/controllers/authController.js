@@ -50,11 +50,17 @@ export const signup = async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error.message, error);
-    res.status(500).json({
+    const message = error.message || 'Failed to create account';
+    const status = message.includes('JWT_SECRET')
+      ? 500
+      : message.includes('buffering timed out') || message.includes('ECONN')
+        ? 503
+        : 500;
+    res.status(status).json({
       success: false,
       error: {
         code: 'SIGNUP_FAILED',
-        message: 'Failed to create account',
+        message,
       },
     });
   }
@@ -113,11 +119,17 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
+    const message = error.message || 'Failed to log in';
+    const status = message.includes('JWT_SECRET')
+      ? 500
+      : message.includes('buffering timed out') || message.includes('ECONN')
+        ? 503
+        : 500;
+    res.status(status).json({
       success: false,
       error: {
         code: 'LOGIN_FAILED',
-        message: 'Failed to log in',
+        message,
       },
     });
   }

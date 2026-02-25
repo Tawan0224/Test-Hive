@@ -38,8 +38,27 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow non-browser clients and same-origin calls
+    if (!origin) return callback(null, true);
+
+    // On Vercel, allow configured origins plus preview domains
+    if (IS_SERVERLESS) {
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+
+    // Local/dev strict origin allowlist
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
