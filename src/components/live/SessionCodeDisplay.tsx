@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface SessionCodeDisplayProps {
   code: string;
@@ -7,8 +8,9 @@ interface SessionCodeDisplayProps {
 const SessionCodeDisplay = ({ code }: SessionCodeDisplayProps) => {
   const [copied, setCopied] = useState(false);
 
+  const joinUrl = `${window.location.origin}/live/join/${code}`;
+
   const handleCopy = async () => {
-    const joinUrl = `${window.location.origin}/live/join/${code}`;
     await navigator.clipboard.writeText(joinUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -22,6 +24,19 @@ const SessionCodeDisplay = ({ code }: SessionCodeDisplayProps) => {
           {code}
         </span>
       </div>
+
+      {/* QR Code */}
+      <div className="mt-6 flex justify-center">
+        <div className="p-4 bg-white rounded-xl">
+          <QRCodeSVG
+            value={joinUrl}
+            size={160}
+            level="M"
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-white/30 text-xs font-body">Scan to join</p>
+
       <button
         onClick={handleCopy}
         className="mt-4 px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg

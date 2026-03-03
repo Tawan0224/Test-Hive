@@ -5,3 +5,4 @@ export { default as LiveQuestionCard } from './LiveQuestionCard';
 export { default as LiveAnswerGrid } from './LiveAnswerGrid';
 export { default as LiveScoreboard } from './LiveScoreboard';
 export { default as LiveBossHPBar } from './LiveBossHPBar';
+export { default as LiveBattleScene } from './LiveBattleScene';

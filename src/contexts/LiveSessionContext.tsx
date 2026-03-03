@@ -1,6 +1,7 @@
 import { createContext, useContext, useCallback, useEffect, useReducer, useRef } from 'react';
 import { connectSocket, disconnectSocket, getSocket } from '../services/socket';
 import type { Socket } from 'socket.io-client';
+import type { MascotState } from '../components/battle/battleConfig';
 
 // ── Types ────────────────────────────────────────────
 
@@ -35,6 +36,9 @@ interface QuestionResults {
   bossDamageDealt: number;
   totalQuestions: number;
   isLastQuestion: boolean;
+  correctCount: number;
+  wrongCount: number;
+  collectiveBonus: number;
 }
 
 interface CompletedData {
@@ -62,6 +66,10 @@ export interface LiveSessionState {
   completedData: CompletedData | null;
   bossHP: number;
   bossMaxHP: number;
+  bossState: MascotState;
+  birdState: MascotState;
+  correctCount: number;
+  wrongCount: number;
   error: string | null;
 }
 
@@ -79,6 +87,8 @@ type Action =
   | { type: 'ANSWER_COUNT'; count: number; total: number }
   | { type: 'QUESTION_RESULTS'; data: QuestionResults }
   | { type: 'COMPLETED'; data: CompletedData }
+  | { type: 'SET_BIRD_STATE'; state: MascotState }
+  | { type: 'SET_BOSS_STATE'; state: MascotState }
   | { type: 'ERROR'; message: string }
   | { type: 'RESET' };
 
@@ -99,6 +109,10 @@ const initialState: LiveSessionState = {
   completedData: null,
   bossHP: 0,
   bossMaxHP: 0,
+  bossState: 'idle' as MascotState,
+  birdState: 'idle' as MascotState,
+  correctCount: 0,
+  wrongCount: 0,
   error: null,
 };
 
@@ -115,7 +129,7 @@ function reducer(state: LiveSessionState, action: Action): LiveSessionState {
     case 'PLAYER_LEFT':
       return { ...state, players: action.players, totalPlayers: action.players.length };
     case 'QUESTION':
-      return { ...state, status: 'active', currentQuestion: action.data, timerRemaining: action.data.timeLimit, hasAnswered: false, selectedOption: null, answerCount: 0, lastResults: null, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP };
+      return { ...state, status: 'active', currentQuestion: action.data, timerRemaining: action.data.timeLimit, hasAnswered: false, selectedOption: null, answerCount: 0, lastResults: null, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP, bossState: 'idle', birdState: 'idle', correctCount: 0, wrongCount: 0 };
     case 'TIMER':
       return { ...state, timerRemaining: action.remaining };
     case 'PAUSED':
@@ -127,9 +141,13 @@ function reducer(state: LiveSessionState, action: Action): LiveSessionState {
     case 'ANSWER_COUNT':
       return { ...state, answerCount: action.count, totalPlayers: action.total };
     case 'QUESTION_RESULTS':
-      return { ...state, status: 'results', lastResults: action.data, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP, players: action.data.scoreboard };
+      return { ...state, status: 'results', lastResults: action.data, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP, players: action.data.scoreboard, correctCount: action.data.correctCount, wrongCount: action.data.wrongCount };
     case 'COMPLETED':
-      return { ...state, status: 'completed', completedData: action.data, players: action.data.finalScoreboard, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP };
+      return { ...state, status: 'completed', completedData: action.data, players: action.data.finalScoreboard, bossHP: action.data.bossHP, bossMaxHP: action.data.bossMaxHP, bossState: action.data.bossDefeated ? 'defeat' : 'victory', birdState: action.data.bossDefeated ? 'victory' : 'defeat' };
+    case 'SET_BIRD_STATE':
+      return { ...state, birdState: action.state };
+    case 'SET_BOSS_STATE':
+      return { ...state, bossState: action.state };
     case 'ERROR':
       return { ...state, status: 'error', error: action.message };
     case 'RESET':
@@ -151,6 +169,8 @@ interface LiveSessionActions {
   nextQuestion: () => void;
   leaveSession: () => void;
   reset: () => void;
+  setBirdState: (s: MascotState) => void;
+  setBossState: (s: MascotState) => void;
 }
 
 interface LiveSessionContextValue {
@@ -325,6 +345,14 @@ export function LiveSessionProvider({ children }: { children: React.ReactNode })
     dispatch({ type: 'RESET' });
   }, []);
 
+  const setBirdState = useCallback((s: MascotState) => {
+    dispatch({ type: 'SET_BIRD_STATE', state: s });
+  }, []);
+
+  const setBossState = useCallback((s: MascotState) => {
+    dispatch({ type: 'SET_BOSS_STATE', state: s });
+  }, []);
+
   const actions: LiveSessionActions = {
     initAsHost,
     joinSession,
@@ -335,6 +363,8 @@ export function LiveSessionProvider({ children }: { children: React.ReactNode })
     nextQuestion,
     leaveSession,
     reset,
+    setBirdState,
+    setBossState,
   };
 
   return (

@@ -397,6 +397,16 @@ function closeQuestion(io, session) {
     }
   }
 
+  // Collective bonus: 25% extra damage if ALL players answered correctly
+  const allCorrect = Array.from(session.players.values()).every(
+    p => p.currentAnswer && p.currentAnswer.optionIndex === correctIndex
+  );
+  let collectiveBonus = 0;
+  if (allCorrect && playerCount >= 2) {
+    collectiveBonus = Math.round(totalBossDamage * 0.25);
+    totalBossDamage += collectiveBonus;
+  }
+
   // Apply boss damage
   session.bossCurrentHP = Math.max(0, session.bossCurrentHP - totalBossDamage);
 
@@ -416,6 +426,10 @@ function closeQuestion(io, session) {
     }))
     .sort((a, b) => b.score - a.score);
 
+  // Count correct / wrong for battle animations
+  const correctCount = scoreboard.filter(p => p.answeredCorrectly).length;
+  const wrongCount = scoreboard.filter(p => !p.answeredCorrectly).length;
+
   // Emit results to everyone
   io.to(roomName(session.sessionCode)).emit('session:question-results', {
     questionIndex: session.currentQuestionIndex,
@@ -427,6 +441,9 @@ function closeQuestion(io, session) {
     bossDamageDealt: Math.round(totalBossDamage),
     totalQuestions,
     isLastQuestion: session.currentQuestionIndex >= totalQuestions - 1,
+    correctCount,
+    wrongCount,
+    collectiveBonus,
   });
 
   // If boss defeated, auto-finalize

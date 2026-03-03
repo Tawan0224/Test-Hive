@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import { useAuth } from '../contexts/AuthContext'
-import { attemptsAPI, quizAPI, achievementsAPI } from '../services/api'
+import { attemptsAPI, quizAPI, achievementsAPI, liveSessionAPI } from '../services/api'
 
 const HISTORY_PREVIEW_COUNT = 5
 
@@ -11,18 +11,24 @@ const ProfilePage = () => {
   const { user, isLoading, isAuthenticated } = useAuth()
   const [achievements, setAchievements] = useState<any[]>([])
   const [testHistory, setTestHistory] = useState<any[]>([])
+  const [liveHistory, setLiveHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
   const [showAllHistory, setShowAllHistory] = useState(false)
+  const [showAllLive, setShowAllLive] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [historyRes, achievementsRes] = await Promise.all([
+        const [historyRes, achievementsRes, liveRes] = await Promise.all([
           attemptsAPI.getMine(),
           achievementsAPI.getAll(),
+          liveSessionAPI.getMine(),
         ])
         if (historyRes.success && historyRes.data) {
           setTestHistory((historyRes.data as any).attempts)
+        }
+        if (liveRes.success && liveRes.data) {
+          setLiveHistory((liveRes.data as any).sessions)
         }
         if (achievementsRes.success && achievementsRes.data) {
           const allAchievements = achievementsRes.data as any[]
@@ -359,6 +365,88 @@ const ProfilePage = () => {
                       {showAllHistory
                         ? `Show less ↑`
                         : `View all ${testHistory.length} activities →`}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Live Session History ── */}
+              <div className="mt-8">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#21262d]">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <h2 className="text-base font-semibold text-[#c9d1d9]">Live Sessions</h2>
+                  </div>
+
+                  {!historyLoading && liveHistory.length > 0 && (
+                    <span className="text-xs text-[#7d8590] bg-[#21262d] px-2 py-0.5 rounded-full">
+                      {showAllLive ? liveHistory.length : Math.min(HISTORY_PREVIEW_COUNT, liveHistory.length)} / {liveHistory.length}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {historyLoading ? (
+                    <div className="text-center py-6">
+                      <p className="text-[#7d8590] text-sm">Loading sessions...</p>
+                    </div>
+                  ) : liveHistory.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-[#7d8590] text-sm">No live sessions yet. Host or join one!</p>
+                    </div>
+                  ) : (
+                    (showAllLive ? liveHistory : liveHistory.slice(0, HISTORY_PREVIEW_COUNT)).map((session: any) => (
+                      <div
+                        key={session._id}
+                        className="flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`text-lg ${session.bossDefeated ? 'text-green-400' : 'text-red-400'}`}>
+                            {session.bossDefeated ? '🏆' : '💀'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm text-[#c9d1d9] font-medium truncate">
+                              {session.quizTitle}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-[#7d8590]">
+                              <span>{session.isHost ? 'Hosted' : `#${session.myRank}`}</span>
+                              <span>·</span>
+                              <span>{session.playerCount} players</span>
+                              <span>·</span>
+                              <span>
+                                {new Date(session.completedAt).toLocaleDateString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          {!session.isHost && session.myScore != null && (
+                            <span className="text-sm font-medium text-[#c9d1d9]">
+                              {session.myScore} pts
+                            </span>
+                          )}
+                          <span className={`block text-xs ${session.bossDefeated ? 'text-green-400' : 'text-red-400'}`}>
+                            {session.bossDefeated ? 'Victory' : 'Defeat'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {!historyLoading && liveHistory.length > HISTORY_PREVIEW_COUNT && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setShowAllLive(prev => !prev)}
+                      className="text-sm text-[#58a6ff] hover:underline transition-colors duration-200"
+                    >
+                      {showAllLive
+                        ? 'Show less ↑'
+                        : `View all ${liveHistory.length} sessions →`}
                     </button>
                   </div>
                 )}

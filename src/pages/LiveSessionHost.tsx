@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLiveSession } from '../contexts/LiveSessionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,9 +9,12 @@ import {
   LiveAnswerGrid,
   LiveTimer,
   LiveScoreboard,
-  LiveBossHPBar,
+  LiveBattleScene,
 } from '../components/live';
 import Button from '../components/ui/Button';
+import { playHitSound, playWrongSound, playVictorySound, playDefeatSound, playBonusSound } from '../utils/sounds';
+
+const PHASE_DURATION = 800;
 
 const LiveSessionHost = () => {
   const { sessionCode } = useParams<{ sessionCode: string }>();
@@ -19,6 +22,9 @@ const LiveSessionHost = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { state, actions } = useLiveSession();
+
+  const [flashType, setFlashType] = useState<'correct' | 'wrong' | null>(null);
+  const sequencerRef = useRef<number>(0);
 
   // Read quiz info passed from HomePage navigation
   const navState = location.state as { quizTitle?: string; questionCount?: number } | null;
@@ -29,10 +35,81 @@ const LiveSessionHost = () => {
     actions.initAsHost(sessionCode, navState?.quizTitle || '', navState?.questionCount || 0);
   }, [sessionCode]);
 
+  // Two-phase battle animation sequencer (same as player but host always sees green flash when damage dealt)
+  useEffect(() => {
+    if (state.status !== 'results' || !state.lastResults) return;
+
+    const { correctCount, wrongCount } = state.lastResults;
+
+    sequencerRef.current++;
+    const seqId = sequencerRef.current;
+
+    let delay = 200;
+
+    // Phase 1: Bird attacks boss
+    if (correctCount > 0) {
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBirdState('attack');
+        actions.setBossState('hit');
+        playHitSound();
+        if (state.lastResults?.collectiveBonus) {
+          setTimeout(() => playBonusSound(), 300);
+        }
+        setFlashType('correct');
+      }, delay);
+      delay += PHASE_DURATION;
+
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBirdState('idle');
+        actions.setBossState('idle');
+        setFlashType(null);
+      }, delay);
+      delay += 200;
+    }
+
+    // Phase 2: Boss retaliates
+    if (wrongCount > 0) {
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBossState('attack');
+        actions.setBirdState('hit');
+        playWrongSound();
+        setFlashType('wrong');
+      }, delay);
+      delay += PHASE_DURATION;
+
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBossState('idle');
+        actions.setBirdState('idle');
+        setFlashType(null);
+      }, delay);
+    }
+
+    return () => { sequencerRef.current++; };
+  }, [state.lastResults]);
+
+  // Victory/defeat sound on completion
+  useEffect(() => {
+    if (state.status !== 'completed' || !state.completedData) return;
+    if (state.completedData.bossDefeated) {
+      playVictorySound();
+    } else {
+      playDefeatSound();
+    }
+  }, [state.status]);
+
   const handleLeave = () => {
     actions.leaveSession();
     navigate('/home');
   };
+
+  // Calculate average player HP for the bird side
+  const avgPlayerHP = state.players.length > 0
+    ? Math.round(state.players.reduce((sum, p) => sum + p.hp, 0) / state.players.length)
+    : 100;
 
   if (!sessionCode) {
     return (
@@ -87,10 +164,13 @@ const LiveSessionHost = () => {
         {/* ─── ACTIVE / PAUSED PHASE ─── */}
         {(state.status === 'active' || state.status === 'paused') && state.currentQuestion && (
           <div className="space-y-6">
-            {/* Boss HP */}
-            <LiveBossHPBar
-              current={state.bossHP}
-              max={state.bossMaxHP}
+            {/* Battle Scene */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={avgPlayerHP}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
             />
 
             {/* Timer */}
@@ -138,11 +218,19 @@ const LiveSessionHost = () => {
         {/* ─── RESULTS PHASE (between questions) ─── */}
         {state.status === 'results' && state.lastResults && (
           <div className="space-y-6">
-            {/* Boss HP */}
-            <LiveBossHPBar
-              current={state.bossHP}
-              max={state.bossMaxHP}
-              isHit={true}
+            {/* Battle Scene with animations */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={avgPlayerHP}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
+              bossDamageDealt={state.lastResults.bossDamageDealt}
+              correctCount={state.correctCount}
+              wrongCount={state.wrongCount}
+              collectiveBonus={state.lastResults.collectiveBonus}
+              showResults={true}
+              flashType={flashType}
             />
 
             {state.lastResults.bossDefeated && (
@@ -152,13 +240,6 @@ const LiveSessionHost = () => {
                 </p>
               </div>
             )}
-
-            {/* Boss damage dealt */}
-            <div className="text-center">
-              <p className="text-white/50 font-body text-sm">
-                Damage dealt: <span className="text-red-400 font-bold">{state.lastResults.bossDamageDealt}</span>
-              </p>
-            </div>
 
             {/* Correct answer reveal */}
             {state.currentQuestion && (
@@ -216,8 +297,14 @@ const LiveSessionHost = () => {
               )}
             </div>
 
-            {/* Boss HP bar */}
-            <LiveBossHPBar current={state.bossHP} max={state.bossMaxHP} />
+            {/* Battle Scene with final state */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={avgPlayerHP}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
+            />
 
             {/* Final scoreboard */}
             <LiveScoreboard

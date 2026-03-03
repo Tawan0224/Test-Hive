@@ -181,6 +181,7 @@ export const liveSessionAPI = {
       method: 'POST',
       body: JSON.stringify({ quizId }),
     }),
+  getMine: () => request('/live-sessions/mine'),
 };
 
 export default request;

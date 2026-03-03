@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveSession } from '../contexts/LiveSessionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,9 +8,12 @@ import {
   LiveAnswerGrid,
   LiveTimer,
   LiveScoreboard,
-  LiveBossHPBar,
+  LiveBattleScene,
 } from '../components/live';
 import Button from '../components/ui/Button';
+import { playCorrectSound, playWrongSound, playHitSound, playVictorySound, playDefeatSound, playBonusSound } from '../utils/sounds';
+
+const PHASE_DURATION = 800; // ms per animation phase
 
 const LiveSessionPlay = () => {
   const { code: urlCode } = useParams<{ code: string }>();
@@ -21,6 +24,8 @@ const LiveSessionPlay = () => {
   const [joinCode, setJoinCode] = useState(urlCode || '');
   const [joinError, setJoinError] = useState('');
   const [joining, setJoining] = useState(false);
+  const [flashType, setFlashType] = useState<'correct' | 'wrong' | null>(null);
+  const sequencerRef = useRef<number>(0);
 
   // Auto-join if code is in URL
   useEffect(() => {
@@ -28,6 +33,81 @@ const LiveSessionPlay = () => {
       handleJoin(urlCode);
     }
   }, [urlCode]);
+
+  // Two-phase battle animation sequencer
+  useEffect(() => {
+    if (state.status !== 'results' || !state.lastResults) return;
+
+    const { correctCount, wrongCount, bossDamageDealt } = state.lastResults;
+    const myResult = state.lastResults.scoreboard.find(p => p.userId === user?._id);
+
+    // Clear any previous sequence
+    sequencerRef.current++;
+    const seqId = sequencerRef.current;
+
+    let delay = 200; // small initial delay
+
+    // Phase 1: Bird attacks boss (if anyone got it right)
+    if (correctCount > 0) {
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBirdState('attack');
+        actions.setBossState('hit');
+        playHitSound();
+        if (myResult?.answeredCorrectly) {
+          setFlashType('correct');
+          playCorrectSound();
+        }
+        if (state.lastResults?.collectiveBonus) {
+          setTimeout(() => playBonusSound(), 300);
+        }
+      }, delay);
+      delay += PHASE_DURATION;
+
+      // Reset after phase 1
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBirdState('idle');
+        actions.setBossState('idle');
+        setFlashType(null);
+      }, delay);
+      delay += 200; // brief gap between phases
+    }
+
+    // Phase 2: Boss retaliates (if anyone got it wrong)
+    if (wrongCount > 0) {
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBossState('attack');
+        actions.setBirdState('hit');
+        if (!myResult?.answeredCorrectly) {
+          setFlashType('wrong');
+          playWrongSound();
+        }
+      }, delay);
+      delay += PHASE_DURATION;
+
+      // Reset after phase 2
+      setTimeout(() => {
+        if (sequencerRef.current !== seqId) return;
+        actions.setBossState('idle');
+        actions.setBirdState('idle');
+        setFlashType(null);
+      }, delay);
+    }
+
+    return () => { sequencerRef.current++; };
+  }, [state.lastResults]);
+
+  // Victory/defeat sound on completion
+  useEffect(() => {
+    if (state.status !== 'completed' || !state.completedData) return;
+    if (state.completedData.bossDefeated) {
+      playVictorySound();
+    } else {
+      playDefeatSound();
+    }
+  }, [state.status]);
 
   const handleJoin = async (code?: string) => {
     const codeToUse = code || joinCode.trim();
@@ -128,31 +208,27 @@ const LiveSessionPlay = () => {
         {/* ─── ACTIVE / PAUSED PHASE ─── */}
         {(state.status === 'active' || state.status === 'paused') && state.currentQuestion && (
           <div className="space-y-6">
-            {/* Boss HP */}
-            <LiveBossHPBar current={state.bossHP} max={state.bossMaxHP} />
+            {/* Battle Scene */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={myData?.hp ?? 100}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
+            />
 
-            {/* Player HP + Score */}
+            {/* Player Score + Combo */}
             {myData && (
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-white/40 font-body">HP</span>
-                  <div className="w-24 h-2 rounded-full bg-dark-700 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        myData.hp > 60 ? 'bg-green-500' : myData.hp > 30 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${myData.hp}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-white/60 font-mono">{myData.hp}</span>
-                </div>
+              <div className="flex items-center justify-center gap-4 px-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-white/40 font-body">Score</span>
                   <span className="text-white font-mono font-bold">{myData.score}</span>
-                  {myData.comboCount >= 2 && (
-                    <span className="text-xs text-yellow-400 font-bold">{myData.comboCount}x</span>
-                  )}
                 </div>
+                {myData.comboCount >= 2 && (
+                  <span className="text-xs text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                    {myData.comboCount}x combo
+                  </span>
+                )}
               </div>
             )}
 
@@ -195,10 +271,19 @@ const LiveSessionPlay = () => {
         {/* ─── RESULTS PHASE ─── */}
         {state.status === 'results' && state.lastResults && (
           <div className="space-y-6">
-            <LiveBossHPBar
-              current={state.bossHP}
-              max={state.bossMaxHP}
-              isHit={true}
+            {/* Battle Scene with animations */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={myData?.hp ?? 100}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
+              bossDamageDealt={state.lastResults.bossDamageDealt}
+              correctCount={state.correctCount}
+              wrongCount={state.wrongCount}
+              collectiveBonus={state.lastResults.collectiveBonus}
+              showResults={true}
+              flashType={flashType}
             />
 
             {state.lastResults.bossDefeated && (
@@ -272,7 +357,14 @@ const LiveSessionPlay = () => {
               )}
             </div>
 
-            <LiveBossHPBar current={state.bossHP} max={state.bossMaxHP} />
+            {/* Battle Scene with final state */}
+            <LiveBattleScene
+              birdState={state.birdState}
+              bossState={state.bossState}
+              birdHP={myData?.hp ?? 0}
+              bossHP={state.bossHP}
+              bossMaxHP={state.bossMaxHP}
+            />
 
             {/* Your final rank */}
             {user && (
