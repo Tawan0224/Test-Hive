@@ -382,9 +382,9 @@ function closeQuestion(io, session) {
       player.comboCount++;
       player.correctCount++;
 
-      const timeRemaining = session.questionTimerRemaining >= 0
-        ? session.questionTimerRemaining
-        : Math.max(0, (question.timeLimit || 30) - ((player.currentAnswer.answeredAt - session.questionStartedAt) / 1000));
+      // Calculate time remaining when this player answered (not when question closed)
+      const elapsedSeconds = (player.currentAnswer.answeredAt - session.questionStartedAt) / 1000;
+      const timeRemaining = Math.max(0, (question.timeLimit || 30) - elapsedSeconds);
 
       const points = calculateScore(question, player, timeRemaining);
       player.score += points;
