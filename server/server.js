@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -10,6 +11,8 @@ import quizRoutes from './src/routes/quiz.js';
 import attemptRoutes from './src/routes/attempts.js';
 import aiRoutes from './src/routes/ai.js';
 import achievementRoutes from './src/routes/achievements.js';
+import liveSessionRoutes from './src/routes/liveSession.js';
+import { initSocketServer } from './src/socket/socketServer.js';
 
 dotenv.config();
 
@@ -97,6 +100,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/attempts', attemptRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/achievements', achievementRoutes);
+app.use('/api/live-sessions', liveSessionRoutes);
 
 // Root route (useful for Vercel/browser checks)
 app.get('/', (req, res) => {
@@ -141,7 +145,9 @@ app.use((err, req, res, next) => {
 
 // Start server only when run directly in local/dev environments.
 if (IS_DIRECT_RUN && !IS_SERVERLESS) {
-  app.listen(PORT, () => {
+  const httpServer = createServer(app);
+  initSocketServer(httpServer);
+  httpServer.listen(PORT, () => {
     console.log(`🐝 TestHive server running on port ${PORT}`);
   });
 }

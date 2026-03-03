@@ -10,8 +10,11 @@ import MultipleChoiceQuiz from "./pages/MultipleChoiceQuiz";
 import MatchingQuiz from "./pages/MatchingQuiz";
 import FlashcardQuiz from "./pages/FlashcardQuiz";
 import QuizResultsPage from "./pages/QuizResultsPage";
+import LiveSessionHost from "./pages/LiveSessionHost";
+import LiveSessionPlay from "./pages/LiveSessionPlay";
 import { LoginPage, SignupPage } from "./pages/auth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { LiveSessionProvider } from "./contexts/LiveSessionContext";
 
 import { RouteFadeProvider, useRouteFade } from "./components/layout/RouteFadeProvider";
 
@@ -48,6 +51,11 @@ function AppRoutes() {
 
       {/* Quiz results */}
       <Route path="/quiz-results" element={<ProtectedRoute><QuizResultsPage /></ProtectedRoute>} />
+
+      {/* Live sessions */}
+      <Route path="/live/host/:sessionCode" element={<ProtectedRoute><LiveSessionProvider><LiveSessionHost /></LiveSessionProvider></ProtectedRoute>} />
+      <Route path="/live/play" element={<ProtectedRoute><LiveSessionProvider><LiveSessionPlay /></LiveSessionProvider></ProtectedRoute>} />
+      <Route path="/live/join/:code" element={<ProtectedRoute><LiveSessionProvider><LiveSessionPlay /></LiveSessionProvider></ProtectedRoute>} />
 
       {/* 404 */}
       <Route path="*" element={

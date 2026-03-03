@@ -3,7 +3,7 @@ import { useRouteFade } from "../components/layout/RouteFadeProvider";
 import Button from "../components/ui/Button";
 import TreasureChest from "../components/three/TreasureChest";
 import { useNavigate } from 'react-router-dom'
-import { quizAPI } from '../services/api'
+import { quizAPI, liveSessionAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 // Team members data
@@ -69,6 +69,44 @@ const HomePage = () => {
   const [joinError, setJoinError] = useState('');
   const [joinLoading, setJoinLoading] = useState(false);
 
+  // My quizzes (for Go Live)
+  const [myQuizzes, setMyQuizzes] = useState<any[]>([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(true);
+  const [goLiveLoading, setGoLiveLoading] = useState<string | null>(null);
+
+  // Fetch user's quizzes for Go Live
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      setQuizzesLoading(true);
+      const response = await quizAPI.getMine();
+      if (response.success && response.data) {
+        // Only multiple-choice quizzes support live sessions
+        const quizzes = (response.data as any).quizzes || response.data;
+        setMyQuizzes(Array.isArray(quizzes) ? quizzes.filter((q: any) => q.type === 'multiple-choice') : []);
+      }
+      setQuizzesLoading(false);
+    };
+    fetchQuizzes();
+  }, []);
+
+  // Go Live handler
+  const handleGoLive = async (quizId: string) => {
+    setGoLiveLoading(quizId);
+    try {
+      const response = await liveSessionAPI.create(quizId);
+      if (response.success && response.data) {
+        navigate(`/live/host/${response.data.sessionCode}`, {
+          state: { quizTitle: response.data.quizTitle, questionCount: response.data.questionCount },
+        });
+      } else {
+        alert(response.error?.message || 'Failed to create live session');
+      }
+    } catch {
+      alert('Failed to create live session');
+    }
+    setGoLiveLoading(null);
+  };
+
   // Join quiz handler
   const handleJoinQuiz = async () => {
     if (!joinCode.trim()) return
@@ -119,7 +157,10 @@ const HomePage = () => {
           })
         }
       } else {
-        setJoinError(response.error?.message || 'Quiz not found with this code')
+        // Share code not found — try as a live session code
+        setJoinLoading(false)
+        navigate(`/live/join/${joinCode.trim().toUpperCase()}`)
+        return
       }
     } catch (err) {
       setJoinLoading(false)
@@ -380,6 +421,61 @@ const HomePage = () => {
               <p className="text-red-400 text-sm text-center mt-3 font-body">{joinError}</p>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Host a Session Section */}
+      <section className="relative z-10 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-purple/5 to-transparent pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4">
+              Host a <span className="text-hive-purple">Live Session</span>
+            </h2>
+            <p className="text-white/60 text-base sm:text-lg font-body">
+              Select one of your multiple-choice quizzes to start a live co-op session
+            </p>
+          </div>
+
+          {quizzesLoading ? (
+            <p className="text-center text-white/40 font-body">Loading your quizzes...</p>
+          ) : myQuizzes.length === 0 ? (
+            <div className="text-center">
+              <p className="text-white/40 font-body mb-4">
+                You don't have any multiple-choice quizzes yet.
+              </p>
+              <Button onClick={() => navigate('/quiz/create')}>
+                Create a Quiz
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {myQuizzes.map((quiz: any) => (
+                <div
+                  key={quiz._id}
+                  className="relative bg-dark-800/60 backdrop-blur-sm border border-white/10 rounded-xl p-5
+                             hover:border-hive-purple/30 transition-all duration-300 group"
+                >
+                  <h3 className="text-white font-display font-bold text-lg mb-1 truncate">
+                    {quiz.title}
+                  </h3>
+                  <p className="text-white/40 text-sm font-body mb-4">
+                    {quiz.questionCount || quiz.questions?.length || 0} questions · {quiz.difficulty || 'medium'}
+                  </p>
+                  <button
+                    onClick={() => handleGoLive(quiz._id)}
+                    disabled={goLiveLoading === quiz._id}
+                    className="w-full px-4 py-2.5 bg-hive-purple/20 hover:bg-hive-purple/40 border border-hive-purple/30
+                               rounded-lg text-hive-purple-light font-body text-sm font-medium
+                               transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {goLiveLoading === quiz._id ? 'Creating...' : 'Go Live'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

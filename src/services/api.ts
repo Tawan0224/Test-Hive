@@ -174,4 +174,13 @@ export const achievementsAPI = {
   getAll: () => request('/achievements'),
 };
 
+// ── Live Session API ──
+export const liveSessionAPI = {
+  create: (quizId: string) =>
+    request<{ sessionCode: string; sessionId: string; quizTitle: string; questionCount: number }>('/live-sessions', {
+      method: 'POST',
+      body: JSON.stringify({ quizId }),
+    }),
+};
+
 export default request;
