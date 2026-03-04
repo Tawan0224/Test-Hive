@@ -102,6 +102,11 @@ export const quizAPI = {
   getMine: () => request('/quizzes/mine'),
   getById: (id: string) => request(`/quizzes/${id}`),
   getByShareCode: (code: string) => request(`/quizzes/share/${code}`),
+  renameTitle: (id: string, title: string) =>
+    request(`/quizzes/${id}/title`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    }),
   delete: (id: string) => request(`/quizzes/${id}`, { method: 'DELETE' }),
 
   submitAttempt: (quizId: string, attemptData: {

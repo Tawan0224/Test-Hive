@@ -243,6 +243,62 @@ export const deleteQuiz = async (req, res) => {
 };
 
 // ────────────────────────────────────────────
+// @desc    Rename a quiz
+// @route   PATCH /api/quizzes/:id/title
+// @access  Private (creator only)
+// ────────────────────────────────────────────
+export const renameQuizTitle = async (req, res) => {
+  try {
+    const { title } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TITLE', message: 'Quiz title is required' },
+      });
+    }
+
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length > 200) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TITLE', message: 'Quiz title must be 200 characters or less' },
+      });
+    }
+
+    const quiz = await Quiz.findById(req.params.id);
+
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Quiz not found' },
+      });
+    }
+
+    if (quiz.creatorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only rename your own quizzes' },
+      });
+    }
+
+    quiz.title = trimmedTitle;
+    await quiz.save();
+
+    return res.json({
+      success: true,
+      data: { quiz },
+    });
+  } catch (error) {
+    console.error('Rename quiz title error:', error);
+    return res.status(500).json({
+      success: false,
+      error: { code: 'UPDATE_FAILED', message: 'Failed to rename quiz' },
+    });
+  }
+};
+
+// ────────────────────────────────────────────
 // @desc    Submit a quiz attempt (save results)
 // @route   POST /api/quizzes/:id/attempts
 // @access  Private

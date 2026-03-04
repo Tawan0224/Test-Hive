@@ -3,6 +3,7 @@ import { useRouteFade } from "../components/layout/RouteFadeProvider";
 import Button from "../components/ui/Button";
 import TreasureChest from "../components/three/TreasureChest";
 import { useNavigate } from 'react-router-dom'
+import { Pencil } from 'lucide-react';
 import { quizAPI, liveSessionAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -72,6 +73,11 @@ const HomePage = () => {
   // My quizzes (for Go Live)
   const [myQuizzes, setMyQuizzes] = useState<any[]>([]);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
+  const [selectedQuizId, setSelectedQuizId] = useState('');
+  const [isEditingSelected, setIsEditingSelected] = useState(false);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [renameMessage, setRenameMessage] = useState('');
   const [goLiveLoading, setGoLiveLoading] = useState<string | null>(null);
 
   // Fetch user's quizzes for Go Live
@@ -82,12 +88,27 @@ const HomePage = () => {
       if (response.success && response.data) {
         // Only multiple-choice quizzes support live sessions
         const quizzes = (response.data as any).quizzes || response.data;
-        setMyQuizzes(Array.isArray(quizzes) ? quizzes.filter((q: any) => q.type === 'multiple-choice') : []);
+        const multipleChoiceQuizzes = Array.isArray(quizzes) ? quizzes.filter((q: any) => q.type === 'multiple-choice') : [];
+        setMyQuizzes(multipleChoiceQuizzes);
+        if (multipleChoiceQuizzes.length > 0) {
+          setSelectedQuizId((prev) => (
+            multipleChoiceQuizzes.some((q: any) => q._id === prev) ? prev : multipleChoiceQuizzes[0]._id
+          ));
+        } else {
+          setSelectedQuizId('');
+        }
       }
       setQuizzesLoading(false);
     };
     fetchQuizzes();
   }, []);
+
+  useEffect(() => {
+    const selectedQuiz = myQuizzes.find((quiz: any) => quiz._id === selectedQuizId);
+    if (selectedQuiz) {
+      setEditingTitle(selectedQuiz.title);
+    }
+  }, [selectedQuizId, myQuizzes]);
 
   // Go Live handler
   const handleGoLive = async (quizId: string) => {
@@ -105,6 +126,35 @@ const HomePage = () => {
       alert('Failed to create live session');
     }
     setGoLiveLoading(null);
+  };
+
+  const handleRenameQuiz = async () => {
+    if (!selectedQuizId) return;
+    const trimmedTitle = editingTitle.trim();
+    if (!trimmedTitle) {
+      setRenameMessage('Quiz name cannot be empty.');
+      return;
+    }
+
+    setRenameLoading(true);
+    setRenameMessage('');
+
+    try {
+      const response = await quizAPI.renameTitle(selectedQuizId, trimmedTitle);
+      if (response.success) {
+        setMyQuizzes((prev) => prev.map((quiz: any) => (
+          quiz._id === selectedQuizId ? { ...quiz, title: trimmedTitle } : quiz
+        )));
+        setRenameMessage('Quiz name updated.');
+        setIsEditingSelected(false);
+      } else {
+        setRenameMessage(response.error?.message || 'Failed to rename quiz.');
+      }
+    } catch {
+      setRenameMessage('Failed to rename quiz.');
+    }
+
+    setRenameLoading(false);
   };
 
   // Join quiz handler
@@ -258,12 +308,12 @@ const HomePage = () => {
                 About
               </button>
 
-              {/* Join Button - scrolls to join section */}
+              {/* Live Session Button - scrolls to join section */}
               <button
                 onClick={() => scrollToSection(joinRef)}
                 className="nav-link hover:text-hive-blue"
               >
-                Join
+                Live Session
               </button>
 
               {/* Profile Link */}
@@ -377,7 +427,7 @@ const HomePage = () => {
           </div>
 
           {/* Join Card */}
-          <div className="max-w-xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <div className="relative group">
               {/* Animated border glow */}
               <div
@@ -405,7 +455,7 @@ const HomePage = () => {
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && handleJoinQuiz()}
                     className="flex-1 px-6 py-4 bg-dark-700/50 border border-white/10 rounded-xl 
-                            text-white placeholder-white/30 font-mono text-lg tracking-widest text-center
+                            text-white placeholder-white/30 font-mono text-base tracking-widest text-center
                             focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20
                             transition-all duration-300 uppercase"
                   />
@@ -426,12 +476,12 @@ const HomePage = () => {
 
       {/* Host a Session Section */}
       <section className="relative z-10 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-purple/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-hive-blue/5 to-transparent pointer-events-none" />
 
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4">
-              Host a <span className="text-hive-purple">Live Session</span>
+              Host a <span className="text-hive-blue">Live Session</span>
             </h2>
             <p className="text-white/60 text-base sm:text-lg font-body">
               Select one of your multiple-choice quizzes to start a live co-op session
@@ -450,30 +500,116 @@ const HomePage = () => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              {myQuizzes.map((quiz: any) => (
+            <div className="max-w-2xl mx-auto">
+              <div className="relative group">
                 <div
-                  key={quiz._id}
-                  className="relative bg-dark-800/60 backdrop-blur-sm border border-white/10 rounded-xl p-5
-                             hover:border-hive-purple/30 transition-all duration-300 group"
-                >
-                  <h3 className="text-white font-display font-bold text-lg mb-1 truncate">
-                    {quiz.title}
-                  </h3>
-                  <p className="text-white/40 text-sm font-body mb-4">
-                    {quiz.questionCount || quiz.questions?.length || 0} questions · {quiz.difficulty || 'medium'}
-                  </p>
-                  <button
-                    onClick={() => handleGoLive(quiz._id)}
-                    disabled={goLiveLoading === quiz._id}
-                    className="w-full px-4 py-2.5 bg-hive-purple/20 hover:bg-hive-purple/40 border border-hive-purple/30
-                               rounded-lg text-hive-purple-light font-body text-sm font-medium
-                               transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute -inset-0.5 bg-hive-blue rounded-2xl opacity-30 group-hover:opacity-50 blur-sm transition-all duration-500"
+                />
+                <div className="relative bg-dark-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-8">
+                  <label htmlFor="host-quiz-select" className="block text-white/70 text-sm font-body mb-2">
+                    Quiz history
+                  </label>
+                  <select
+                    id="host-quiz-select"
+                    value={selectedQuizId}
+                    onChange={(e) => {
+                      setSelectedQuizId(e.target.value);
+                      setIsEditingSelected(false);
+                      setRenameMessage('');
+                    }}
+                    className="w-full pl-6 pr-12 py-4 bg-dark-700/50 border border-white/10 rounded-xl text-white text-base
+                               focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20 transition-all duration-300"
                   >
-                    {goLiveLoading === quiz._id ? 'Creating...' : 'Go Live'}
-                  </button>
+                    {myQuizzes.map((quiz: any) => (
+                      <option key={quiz._id} value={quiz._id}>
+                        {quiz.title}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedQuizId && (
+                    <>
+                      <div className="mt-4 flex items-start justify-between gap-3">
+                        {isEditingSelected ? (
+                          <input
+                            type="text"
+                            value={editingTitle}
+                            onChange={(e) => {
+                              setEditingTitle(e.target.value);
+                              setRenameMessage('');
+                            }}
+                            maxLength={200}
+                            className="flex-1 min-w-0 px-4 py-3 bg-dark-700/50 border border-white/10 rounded-xl text-white text-base
+                                       placeholder-white/30 focus:outline-none focus:border-hive-blue/50 focus:ring-2 focus:ring-hive-blue/20 transition-all duration-300"
+                          />
+                        ) : (
+                          <h3 className="text-white font-display font-bold text-lg truncate">
+                            {myQuizzes.find((quiz: any) => quiz._id === selectedQuizId)?.title}
+                          </h3>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            const selectedQuiz = myQuizzes.find((quiz: any) => quiz._id === selectedQuizId);
+                            setEditingTitle(selectedQuiz?.title || '');
+                            setIsEditingSelected(true);
+                            setRenameMessage('');
+                          }}
+                          className="shrink-0 p-1.5 rounded-md border border-white/15 text-white/80 hover:text-white hover:border-white/30 transition-all duration-200"
+                          aria-label="Edit quiz name"
+                          title="Edit quiz name"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </div>
+
+                      <p className="text-white/40 text-sm font-body mt-2">
+                        {(myQuizzes.find((quiz: any) => quiz._id === selectedQuizId)?.questionCount || 0)} questions
+                        {' · '}
+                        {myQuizzes.find((quiz: any) => quiz._id === selectedQuizId)?.difficulty || 'medium'}
+                      </p>
+
+                      {isEditingSelected && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={handleRenameQuiz}
+                            disabled={renameLoading}
+                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/15 rounded-md text-white text-xs
+                                       transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {renameLoading ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const selectedQuiz = myQuizzes.find((quiz: any) => quiz._id === selectedQuizId);
+                              setEditingTitle(selectedQuiz?.title || '');
+                              setIsEditingSelected(false);
+                              setRenameMessage('');
+                            }}
+                            className="px-3 py-1.5 bg-transparent hover:bg-white/5 border border-white/10 rounded-md text-white/80 text-xs transition-all duration-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+
+                      {renameMessage && (
+                        <p className={`text-xs font-body mt-2 ${renameMessage.includes('updated') ? 'text-green-400' : 'text-red-400'}`}>
+                          {renameMessage}
+                        </p>
+                      )}
+
+                      <Button
+                        onClick={() => handleGoLive(selectedQuizId)}
+                        disabled={!selectedQuizId || goLiveLoading === selectedQuizId}
+                        className="w-full mt-5 px-6 sm:px-8 py-3 sm:py-4"
+                      >
+                        {goLiveLoading === selectedQuizId ? 'Creating...' : 'Go Live'}
+                      </Button>
+                    </>
+                  )}
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ import {
   getQuizById,
   getQuizByShareCode,
   deleteQuiz,
+  renameQuizTitle,
   submitQuizAttempt,
 } from '../controllers/quizController.js';
 import { protect } from '../middleware/auth.js';
@@ -16,6 +17,7 @@ router.post('/', protect, createQuiz);              // POST   /api/quizzes
 router.get('/mine', protect, getMyQuizzes);          // GET    /api/quizzes/mine
 router.get('/share/:shareCode', getQuizByShareCode); // GET    /api/quizzes/share/:code  (public)
 router.get('/:id', protect, getQuizById);            // GET    /api/quizzes/:id
+router.patch('/:id/title', protect, renameQuizTitle); // PATCH /api/quizzes/:id/title
 router.delete('/:id', protect, deleteQuiz);          // DELETE /api/quizzes/:id
 
 // ── Quiz Attempts ──

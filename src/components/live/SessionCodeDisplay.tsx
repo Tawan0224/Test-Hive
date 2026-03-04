@@ -11,7 +11,7 @@ const SessionCodeDisplay = ({ code }: SessionCodeDisplayProps) => {
   const joinUrl = `${window.location.origin}/live/join/${code}`;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(joinUrl);
+    await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -42,7 +42,7 @@ const SessionCodeDisplay = ({ code }: SessionCodeDisplayProps) => {
         className="mt-4 px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg
                    text-white/70 text-sm font-body transition-all duration-200"
       >
-        {copied ? 'Link Copied!' : 'Copy Join Link'}
+        {copied ? 'Code Copied!' : 'Copy Join Code'}
       </button>
     </div>
   );
