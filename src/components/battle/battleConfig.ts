@@ -34,6 +34,7 @@ export const BATTLE_CONFIG = {
  * - Getting ALL wrong = Bird HP goes to 0
  */
 export function getDynamicDamage(totalQuestions: number) {
+  if (!totalQuestions || totalQuestions <= 0) totalQuestions = 1
   const birdDamagePerCorrect = Math.floor(BATTLE_CONFIG.OCTOPUS_MAX_HP / totalQuestions)
   const octopusDamagePerWrong = Math.floor(BATTLE_CONFIG.BIRD_MAX_HP / totalQuestions)
 

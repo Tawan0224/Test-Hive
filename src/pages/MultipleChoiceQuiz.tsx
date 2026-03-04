@@ -299,9 +299,9 @@ const MultipleChoiceQuiz = () => {
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prev => prev + 1)
     } else {
-      setIsQuizComplete(true)
+      handleSubmitQuiz()
     }
-  }, [timeRemaining, currentQuestionIndex, totalQuestions, isQuizComplete, battle.birdDefeated])
+  }, [timeRemaining, currentQuestionIndex, totalQuestions, isQuizComplete, battle.birdDefeated, handleSubmitQuiz])
 
   // ─── ANSWER HANDLER (with battle trigger) ──────────────────
   const handleAnswerSelect = (optionIndex: number) => {

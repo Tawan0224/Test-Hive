@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useRouteFade } from '../components/layout/RouteFadeProvider'
 import { ChevronLeft, ChevronRight, RotateCcw, Home, Layers } from 'lucide-react'
 import { quizAPI } from '../services/api'
@@ -38,8 +38,8 @@ const sampleFlashcardData: FlashcardQuizData = {
 }
 
 const FlashcardQuiz = () => {
-  const navigate = useNavigate()
   const location = useLocation()
+  const { fadeTo } = useRouteFade()
   // Get quiz data from navigation state or use sample data
   const quizData: FlashcardQuizData = location.state?.quizData || sampleFlashcardData
   const totalCards = quizData.cards.length
@@ -49,6 +49,7 @@ const FlashcardQuiz = () => {
   const [isFlipped, setIsFlipped] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [viewedCards, setViewedCards] = useState<Set<number>>(new Set([0]))
+  const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set())
   const [isAnimating, setIsAnimating] = useState(false)
   const [isDeckComplete, setIsDeckComplete] = useState(false)
 
@@ -58,9 +59,15 @@ const FlashcardQuiz = () => {
   const handleFlip = useCallback(() => {
     if (isAnimating) return
     setIsAnimating(true)
-    setIsFlipped(prev => !prev)
+    setIsFlipped(prev => {
+      if (!prev) {
+        // Flipping to back (revealing answer) — count as studied
+        setFlippedCards(f => new Set([...f, currentCardIndex]))
+      }
+      return !prev
+    })
     setTimeout(() => setIsAnimating(false), 600)
-  }, [isAnimating])
+  }, [isAnimating, currentCardIndex])
 
   // Navigate to previous card
   const handlePrevious = useCallback(() => {
@@ -102,13 +109,16 @@ const FlashcardQuiz = () => {
   }, [handleFlip, handlePrevious, handleNext, isDeckComplete])
 
   const handleFinishDeck = async () => {
+    const studied = flippedCards.size
+    const accuracy = totalCards > 0 ? Math.round((studied / totalCards) * 100) : 0
+
     if (quizData._id) {
       try {
         await quizAPI.submitAttempt(quizData._id, {
-          score: 100,
+          score: accuracy,
           totalQuestions: totalCards,
-          correctAnswers: totalCards,
-          accuracy: 100,
+          correctAnswers: studied,
+          accuracy,
           timeSpentSeconds: 0,
         })
       } catch (err) {
@@ -123,6 +133,7 @@ const FlashcardQuiz = () => {
     setCurrentCardIndex(0)
     setIsFlipped(false)
     setViewedCards(new Set([0]))
+    setFlippedCards(new Set())
     setIsDeckComplete(false)
   }
 
@@ -132,7 +143,7 @@ const FlashcardQuiz = () => {
   }
 
   const confirmLeaveDeck = () => {
-    navigate('/home')
+    fadeTo('/home')
   }
 
   // Progress calculation
@@ -158,25 +169,31 @@ const FlashcardQuiz = () => {
             <h1 className="text-3xl sm:text-4xl font-bold text-white font-display mb-3">Deck Complete!</h1>
             <p className="text-white/60 font-body mb-2 text-lg">{quizData.deckName}</p>
             <p className="text-white/40 font-body mb-10 text-sm">
-              You reviewed all {totalCards} cards. Come back and study again to strengthen your memory!
+              You studied {flippedCards.size} of {totalCards} cards. Come back and study again to strengthen your memory!
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-10">
               <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-6 sm:px-8 py-5">
                 <p className="text-3xl font-bold text-white font-display">{totalCards}</p>
                 <p className="text-white/50 text-sm font-body mt-1">Total Cards</p>
               </div>
               <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-6 sm:px-8 py-5">
-                <p className="text-3xl font-bold text-hive-purple-light font-display">{viewedCards.size}</p>
-                <p className="text-white/50 text-sm font-body mt-1">Cards Seen</p>
+                <p className="text-3xl font-bold text-hive-purple-light font-display">{flippedCards.size}</p>
+                <p className="text-white/50 text-sm font-body mt-1">Cards Studied</p>
+              </div>
+              <div className="bg-dark-600/80 rounded-2xl border border-hive-purple/20 px-6 sm:px-8 py-5">
+                <p className="text-3xl font-bold text-hive-purple-light font-display">
+                  {totalCards > 0 ? Math.round((flippedCards.size / totalCards) * 100) : 0}%
+                </p>
+                <p className="text-white/50 text-sm font-body mt-1">Score</p>
               </div>
             </div>
 
             {/* Buttons */}
             <div className="flex gap-4 justify-center flex-wrap">
               <button
-                onClick={() => navigate('/home')}
+                onClick={() => fadeTo('/home')}
                 className="flex items-center gap-2 px-8 py-4 bg-dark-500/80 text-white rounded-xl
                            hover:bg-dark-500 transition-all duration-300 border border-white/10 font-body"
               >
@@ -192,7 +209,7 @@ const FlashcardQuiz = () => {
                 Study Again
               </button>
               <button
-                onClick={() => navigate('/quiz/create')}
+                onClick={() => fadeTo('/quiz/create')}
                 className="flex items-center gap-2 px-8 py-4 bg-hive-purple text-white rounded-xl
                            hover:bg-hive-purple-light transition-all duration-300 font-body"
               >
