@@ -40,6 +40,10 @@ export function getSession(code) {
   return sessions.get(code);
 }
 
+export function getAllSessions() {
+  return sessions;
+}
+
 export function removeSession(code) {
   const session = sessions.get(code);
   if (session?.timerInterval) {

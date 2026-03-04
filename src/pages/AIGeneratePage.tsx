@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Upload, ArrowUp, FileText, X, Loader2 } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import MascotBird from '../components/three/MascotBird'
@@ -17,6 +17,8 @@ interface UploadedFile {
 
 const AIGeneratePage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const fromLiveSession = (location.state as any)?.fromLiveSession === true
 
   const [selectedQuizType, setSelectedQuizType] = useState<QuizType>('multiple-choice')
   const [selectedCount, setSelectedCount] = useState<QuestionCount>(10)
@@ -111,6 +113,13 @@ const AIGeneratePage = () => {
 
       setGeneratingStatus('Done! Loading your quiz...')
       await new Promise(resolve => setTimeout(resolve, 300))
+
+      // If user came from "Host Live Session", send them back to home
+      // so the new quiz appears in their Go Live list
+      if (fromLiveSession) {
+        navigate('/home')
+        return
+      }
 
       // Navigate to the correct quiz page with real generated data
       if (selectedQuizType === 'multiple-choice') {

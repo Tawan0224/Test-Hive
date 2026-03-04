@@ -445,7 +445,7 @@ const HomePage = () => {
               <p className="text-white/40 font-body mb-4">
                 You don't have any multiple-choice quizzes yet.
               </p>
-              <Button onClick={() => navigate('/quiz/create')}>
+              <Button onClick={() => navigate('/quiz/create', { state: { fromLiveSession: true } })}>
                 Create a Quiz
               </Button>
             </div>

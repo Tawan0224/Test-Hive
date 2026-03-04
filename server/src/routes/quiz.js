@@ -6,7 +6,6 @@ import {
   getQuizByShareCode,
   deleteQuiz,
   submitQuizAttempt,
-  getMyAttempts,
 } from '../controllers/quizController.js';
 import { protect } from '../middleware/auth.js';
 

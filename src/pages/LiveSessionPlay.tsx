@@ -208,6 +208,19 @@ const LiveSessionPlay = () => {
         {/* ─── ACTIVE / PAUSED PHASE ─── */}
         {(state.status === 'active' || state.status === 'paused') && state.currentQuestion && (
           <div className="space-y-6">
+            {/* Header with leave button */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl sm:text-2xl font-display font-bold text-white">
+                Live Session
+              </h1>
+              <button
+                onClick={handleLeave}
+                className="text-sm text-white/50 hover:text-red-400 font-body transition-colors"
+              >
+                Leave
+              </button>
+            </div>
+
             {/* Battle Scene */}
             <LiveBattleScene
               birdState={state.birdState}
@@ -271,6 +284,19 @@ const LiveSessionPlay = () => {
         {/* ─── RESULTS PHASE ─── */}
         {state.status === 'results' && state.lastResults && (
           <div className="space-y-6">
+            {/* Header with leave button */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl sm:text-2xl font-display font-bold text-white">
+                Live Session
+              </h1>
+              <button
+                onClick={handleLeave}
+                className="text-sm text-white/50 hover:text-red-400 font-body transition-colors"
+              >
+                Leave
+              </button>
+            </div>
+
             {/* Battle Scene with animations */}
             <LiveBattleScene
               birdState={state.birdState}

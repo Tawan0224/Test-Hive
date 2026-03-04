@@ -232,6 +232,10 @@ export function LiveSessionProvider({ children }: { children: React.ReactNode })
       dispatch({ type: 'COMPLETED', data });
     });
 
+    socket.on('session:host-left', () => {
+      dispatch({ type: 'ERROR', message: 'The host has ended the session.' });
+    });
+
     socket.on('connect_error', (err) => {
       console.error('[Socket] Connection error:', err.message);
       dispatch({ type: 'ERROR', message: 'Failed to connect to server' });

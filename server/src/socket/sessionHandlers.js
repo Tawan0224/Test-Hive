@@ -3,6 +3,7 @@ import LiveSession from '../models/LiveSession.js';
 import {
   createSession,
   getSession,
+  getAllSessions,
   removeSession,
   addPlayer,
   removePlayer,
@@ -301,15 +302,45 @@ export function registerSessionHandlers(io, socket) {
   socket.on('disconnect', () => {
     // Find which session this socket was in and handle the leave
     // We iterate sessions — acceptable since session count is small
-    // For a production app you'd maintain a socket->session mapping
+    for (const [code, session] of getAllSessions()) {
+      // Check if disconnected socket is the host
+      if (session.hostSocketId === socket.id) {
+        session.hostSocketId = null;
+        console.log(`[Live] Host disconnected from session ${code}`);
+
+        // Notify players that the host has left
+        io.to(roomName(code)).emit('session:host-left');
+        continue;
+      }
+
+      // Check if disconnected socket is a player
+      for (const player of session.players.values()) {
+        if (player.socketId === socket.id) {
+          handlePlayerLeave(io, socket, code);
+          console.log(`[Live] Player ${player.username} disconnected from session ${code}`);
+          break;
+        }
+      }
+    }
   });
 }
 
 // ─── HELPER FUNCTIONS ────────────────────────────────────────
 
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function sendQuestion(io, session) {
   const question = session.quiz.questions[session.currentQuestionIndex];
   if (!question) return;
+
+  // Shuffle options so the correct answer isn't always in the same position
+  shuffleArray(question.options);
 
   // Reset all player answers for the new question
   for (const player of session.players.values()) {
@@ -519,10 +550,8 @@ function handlePlayerLeave(io, socket, sessionCode) {
   const userId = socket.user._id.toString();
   socket.leave(roomName(sessionCode));
 
-  // Don't remove player data if session is active (preserve scores)
-  if (session.status === 'lobby') {
-    removePlayer(sessionCode, userId);
-  }
+  // Always remove the player so they don't block answer counting
+  removePlayer(sessionCode, userId);
 
   const players = getPlayerList(sessionCode);
   io.to(roomName(sessionCode)).emit('session:player-left', {
@@ -530,10 +559,28 @@ function handlePlayerLeave(io, socket, sessionCode) {
     playerCount: players.length,
   });
 
-  io.to(roomName(sessionCode)).emit('session:lobby', {
-    players,
-    sessionCode,
-    quizTitle: session.quiz.title,
-    questionCount: session.quiz.questions.length,
-  });
+  if (session.status === 'lobby') {
+    // Update lobby UI for remaining players
+    io.to(roomName(sessionCode)).emit('session:lobby', {
+      players,
+      sessionCode,
+      quizTitle: session.quiz.title,
+      questionCount: session.quiz.questions.length,
+    });
+  } else if (session.status === 'active') {
+    // Check if all remaining players have answered — if so, close the question early
+    const totalPlayers = session.players.size;
+    if (totalPlayers === 0) {
+      finalizeSession(io, session);
+    } else {
+      const answeredCount = Array.from(session.players.values()).filter(p => p.currentAnswer !== null).length;
+      io.to(session.hostSocketId).emit('session:answer-count', {
+        count: answeredCount,
+        total: totalPlayers,
+      });
+      if (answeredCount >= totalPlayers) {
+        closeQuestion(io, session);
+      }
+    }
+  }
 }

@@ -82,8 +82,8 @@ RULES:
 - NEVER create questions about figures, images, diagrams, charts, tables, or graphs — these are not visible to the quiz taker. Only ask about information stated in the text itself
 - Cover a range of topics from the document
 - Vary difficulty (mix easy, medium, hard)
-- CRITICAL FORMATTING RULE: Every option must be between 3-12 words. Write the correct answer FIRST, then write 3 wrong answers that are the SAME length (± 2 words). If the correct answer is 6 words, all wrong answers must also be 5-8 words. NEVER let the correct answer be noticeably longer than the others
-- Randomize where the correct answer appears (not always the same position)
+- CRITICAL FORMATTING RULE: Every option must be between 3-12 words. All 4 options must be the SAME length (± 2 words). NEVER let the correct answer be noticeably longer or shorter than the others
+- IMPORTANT: Randomize the position of the correct answer across questions — do NOT always put it in the same slot
 
 Respond with ONLY valid JSON, no markdown, no explanation:
 {
