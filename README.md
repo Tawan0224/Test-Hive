@@ -1,73 +1,139 @@
-# React + TypeScript + Vite
+# TestHive
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TestHive is a gamified learning platform for creating, sharing, and playing quizzes.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- User authentication (email/password + Google/Microsoft/Facebook)
+- AI quiz generation from PDF files
+- Multiple quiz formats:
+  - Multiple choice
+  - Matching
+  - Flashcards
+- Quiz sharing via share code
+- Live multiplayer quiz sessions with Socket.IO
+- Progress tracking and achievements
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Frontend: React + TypeScript + Vite + Tailwind CSS
+- Backend: Node.js + Express + MongoDB + Socket.IO
+- AI: Anthropic API (Claude)
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+.
+├── src/                 # Frontend app (Vite)
+├── server/              # Backend API + sockets
+├── public/              # Static assets and 3D models
+└── README.md
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Prerequisites
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Node.js 20+
+- pnpm (recommended) or npm
+- MongoDB connection string
+- Anthropic API key (for AI generation)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Environment Variables
+
+### Frontend (`.env` in project root)
+
+```env
+VITE_API_URL=http://localhost:5001/api
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+VITE_MICROSOFT_CLIENT_ID=your_microsoft_client_id
+VITE_MICROSOFT_TENANT_ID=your_microsoft_tenant_id
 ```
+
+### Backend (`server/.env`)
+
+```env
+PORT=5001
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=7d
+CLIENT_URL=http://localhost:5173
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+Notes:
+- If backend `PORT` is not `5001`, update `VITE_API_URL` to match.
+- `CLIENT_URL` can be comma-separated for multiple allowed origins.
+
+## Installation
+
+Install dependencies in both frontend and backend:
+
+```bash
+pnpm install
+cd server && pnpm install
+```
+
+## Run Locally
+
+### Option 1: Run both from root
+
+```bash
+pnpm dev:all
+```
+
+### Option 2: Run separately
+
+Terminal 1 (frontend):
+
+```bash
+pnpm dev
+```
+
+Terminal 2 (backend):
+
+```bash
+cd server
+pnpm dev
+```
+
+Frontend: `http://localhost:5173`
+
+## Build
+
+Frontend build:
+
+```bash
+pnpm build
+pnpm preview
+```
+
+Backend production start:
+
+```bash
+cd server
+pnpm start
+```
+
+## API Overview
+
+Base URL: `${VITE_API_URL}` (default `http://localhost:5001/api`)
+
+Main route groups:
+- `/auth`
+- `/quizzes`
+- `/attempts`
+- `/ai`
+- `/achievements`
+- `/live-sessions`
+
+Health check:
+- `GET /api/health`
+
+## Deployment Notes
+
+- Frontend includes `vercel.json` for SPA rewrites.
+- Backend includes `server/vercel.json` for serverless deployment.
+- Backend writes temporary PDF uploads to `/tmp/testhive-uploads`.
+
+## License
+
+No license file is currently defined in this repository.
