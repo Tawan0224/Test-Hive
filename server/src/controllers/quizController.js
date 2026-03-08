@@ -111,7 +111,7 @@ export const getMyQuizzes = async (req, res) => {
   try {
     const quizzes = await Quiz.find({ creatorId: req.user._id })
       .sort({ createdAt: -1 })
-      .select('title type difficulty questionCount stats shareCode createdAt');
+      .select('title type difficulty questions matchingQuestions flashcards stats shareCode createdAt');
 
     res.json({
       success: true,
