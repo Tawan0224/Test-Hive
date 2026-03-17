@@ -61,6 +61,11 @@ export const authAPI = {
       body: JSON.stringify(data),
     }),
 
+  deleteAccount: () =>
+    request('/auth/account', {
+      method: 'DELETE',
+    }),
+
   googleAuth: (data: { email: string; googleId: string; displayName: string; profilePicture: string }) =>
     request('/auth/google', {
       method: 'POST',

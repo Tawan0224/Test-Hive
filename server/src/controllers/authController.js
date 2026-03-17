@@ -1,6 +1,10 @@
 import User from '../models/User.js';
 import Achievement from '../models/Achievement.js';
+import Quiz from '../models/Quiz.js';
+import QuizAttempt from '../models/QuizAttempt.js';
+import LiveSession from '../models/LiveSession.js';
 import { generateToken } from '../utils/generateToken.js';
+import { getAllSessions, removePlayer, removeSession } from '../socket/sessionStore.js';
 
 const getServerErrorStatus = (message = '') => {
   if (message.includes('JWT_SECRET')) return 500;
@@ -285,6 +289,56 @@ export const updateProfile = async (req, res) => {
       error: {
         code: 'UPDATE_FAILED',
         message: 'Failed to update profile',
+      },
+    });
+  }
+};
+
+// @desc    Delete current user account
+// @route   DELETE /api/auth/account
+// @access  Private
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const quizzes = await Quiz.find({ creatorId: userId }).select('_id');
+    const quizIds = quizzes.map((quiz) => quiz._id);
+
+    if (quizIds.length > 0) {
+      await QuizAttempt.deleteMany({ quizId: { $in: quizIds } });
+    }
+
+    await QuizAttempt.deleteMany({ userId });
+    await Quiz.deleteMany({ creatorId: userId });
+    await LiveSession.deleteMany({ hostId: userId });
+    await LiveSession.updateMany(
+      { 'participants.userId': userId },
+      { $pull: { participants: { userId } } }
+    );
+    await User.findByIdAndDelete(userId);
+
+    // Clean up any hot in-memory live sessions tied to this user.
+    for (const [sessionCode, session] of getAllSessions().entries()) {
+      if (session.hostId === userId.toString()) {
+        removeSession(sessionCode);
+        continue;
+      }
+      removePlayer(sessionCode, userId);
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        message: 'Account deleted successfully',
+      },
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_FAILED',
+        message: 'Failed to delete account',
       },
     });
   }

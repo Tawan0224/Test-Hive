@@ -6,7 +6,7 @@ import { authAPI } from '../services/api'
 
 const EditProfilePage = () => {
   const navigate = useNavigate()
-  const { user, isLoading: authLoading, updateUser } = useAuth()
+  const { user, isLoading: authLoading, updateUser, logout } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Form state
@@ -18,6 +18,7 @@ const EditProfilePage = () => {
   })
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Password change state
@@ -189,6 +190,33 @@ const EditProfilePage = () => {
   // Handle cancel
   const handleCancel = () => {
     navigate('/profile')
+  }
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Delete your account permanently? This will remove your profile, your quizzes, your attempts, and hosted live sessions.'
+    )
+
+    if (!confirmed) return
+
+    setIsDeletingAccount(true)
+    setErrors({})
+
+    try {
+      const response = await authAPI.deleteAccount()
+
+      if (response.success) {
+        logout()
+        navigate('/login')
+        return
+      }
+
+      setErrors({ general: response.error?.message || 'Failed to delete account' })
+    } catch {
+      setErrors({ general: 'Network error. Please try again.' })
+    } finally {
+      setIsDeletingAccount(false)
+    }
   }
 
   // Generate initials for default avatar
@@ -522,11 +550,13 @@ const EditProfilePage = () => {
                 </div>
                 <button
                   type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
                   className="px-4 py-1.5 bg-transparent hover:bg-[#da3633] border border-[#f85149]
                            rounded-md text-sm font-medium text-[#f85149] hover:text-white
-                           transition-colors duration-200"
+                           transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete account
+                  {isDeletingAccount ? 'Deleting...' : 'Delete account'}
                 </button>
               </div>
             </div>
