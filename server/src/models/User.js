@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   },
   authProvider: {
     type: String,
-    enum: ['email', 'google', 'facebook', 'microsoft'],
+    enum: ['email', 'google', 'microsoft'],
     default: 'email',
   },
   authProviderId: {

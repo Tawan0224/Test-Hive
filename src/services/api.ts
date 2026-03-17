@@ -72,12 +72,6 @@ export const authAPI = {
       body: JSON.stringify(data),
     }),
 
-  facebookAuth: (data: { email: string; facebookId: string; displayName: string; profilePicture: string }) =>
-    request('/auth/facebook', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
   microsoftAuth: (data: { email: string; microsoftId: string; displayName: string; profilePicture: string }) =>
     request('/auth/microsoft', {
       method: 'POST',
